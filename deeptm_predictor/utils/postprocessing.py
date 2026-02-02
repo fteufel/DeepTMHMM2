@@ -127,3 +127,13 @@ def aggregate_memtype_predictions(all_memtype_probs: List[torch.Tensor]) -> Tupl
             all_predicted_indices = [main_idx]
             
     return all_predicted_indices, probs_np
+    
+
+def suppress_implausible_predictions(topology: str) -> str:
+    """Suppress implausible predictions in the topology string."""
+    
+    if topology.count('S') > 70:
+        topology = topology.replace('S', 'b')
+    if topology.count('>') > 170:
+        topology = topology.replace('>', 'b')
+    return topology

@@ -107,7 +107,6 @@ class SP5DeepTMHMM(nn.Module):
             constrain_every = True)
         
         self.simplify_labels = crf_config.convert_crf_states_to_labels_batch
-        self.infer_types_from_topologies = crf_config.get_sequence_type_from_labels_batch
         self._tile_emissions = crf_config.tile_emissions
 
         self.flatten_parameters()

@@ -3,13 +3,11 @@
 DeepTM is a transmembrane protein topology and membrane type predictor.
 
 ## TODO before release
-- Suppress memtype for globular proteins
+- Memtype suppression for globular proteins: do we want to still predict memtype if there's an R/F in the topology?
 - Clean up and fully document output types
 - Make visualization less 2010s
 - Handling of model weights at install time
-- Add SP and TP 70 / 170 length cutoff postprocessing
 - run test set with all memtypes and protein cases
-- Remove dead code from crfconfig that is not used at inference time
 - Clean up pyproject.toml, add license
 - Check with biolib for compatibility reqs
 - Pin dependency versions

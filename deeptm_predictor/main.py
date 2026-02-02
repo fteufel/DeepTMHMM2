@@ -28,6 +28,7 @@ from .utils.formats import gff3_format
 from .utils.plotting import plot_prediction
 from .utils.postprocessing import (
     infer_structural_type, 
+    suppress_implausible_predictions,
     aggregate_topology_predictions, 
     aggregate_memtype_predictions,
     translate_ab_topology,
@@ -110,6 +111,7 @@ def main():
             # Aggregate via agreement-based voting and thresholding
             final_topo_ab, final_marginals_ab = aggregate_topology_predictions(all_topo, all_marginals)
             pred_mem_indices, mem_probs = aggregate_memtype_predictions(all_mem_probs)
+            final_topo_ab = suppress_implausible_predictions(final_topo_ab)
 
             # if we don't work in simplified I-O topo, need to map to actual sides
             if args.simplify_io:
@@ -128,6 +130,11 @@ def main():
             type = DISPLAY_PROT_TYPE_MAPPING[type_code]
             predicted_mem_names = [MEMBRANE_TYPE_NAMES[idx] for idx in pred_mem_indices]
             mem_names_str = "; ".join(predicted_mem_names)
+
+            # no membrane type for non-TM proteins.
+            if type_code in ["I", "S", "T"]:
+                predicted_mem_names = []
+                mem_names_str = ""
 
             # The full info for this sample - json format.
             sample_record = {
