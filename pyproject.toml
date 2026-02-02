@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deeptm_predictor"
+version = "0.1.0"
+authors = [
+  { name="Gemini", email="gemini@google.com" },
+]
+description = "A prediction-only package for DeepTM."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "torch",
+    "biopython",
+    "fair-esm",
+    "tqdm",
+    "pandas",
+    "lightning",
+    "matplotlib"
+]
+
+[project.scripts]
+deeptm-predict = "deeptm_predictor.main:main"
+
+[project.urls]
+"Homepage" = "https://github.com/user/deeptm_predictor" # Placeholder
+
+[tool.setuptools.packages.find]
+include = ["deeptm_predictor*"]
