@@ -369,3 +369,28 @@ class SplitIOCRFwithTPConfig:
                 out.append(self.int_to_label[x[i]])
 
         return ''.join(out)
+
+    def simplify_marginals(self, marginals: torch.Tensor) -> Dict[int, np.ndarray]:
+        """
+        Aggregates raw CRF marginal probabilities into simplified categories for plotting.
+        """
+        from ..constants import MARGINAL_CATEGORY_MAPPING
+
+        category_probs = {}
+        for state_idx, simple_label_idx in self.simplification_dict.items():
+            if state_idx >= marginals.shape[1]:
+                continue
+
+            plot_cat_idx = MARGINAL_CATEGORY_MAPPING.get(simple_label_idx)
+
+            if plot_cat_idx is None:
+                continue
+                
+            probs = marginals[:, state_idx].cpu().numpy()
+
+            if plot_cat_idx not in category_probs:
+                category_probs[plot_cat_idx] = probs
+            else:
+                category_probs[plot_cat_idx] += probs
+                
+        return category_probs
