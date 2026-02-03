@@ -73,38 +73,85 @@ def get_named_regions(topology_ab: str, mem_type_idx: int, simplify_io: bool = F
         pos += length
     return segments
 
+
+def convert_to_segments(label_in: str) -> List[Tuple[str, int, int]]:
+    """
+    Convert a label sequence (string or numpy array) to a list of (label, start, end) segments.
+    """
+    segments = []
+    iterable = enumerate(label_in)
+
+    for label, group in groupby(iterable, key=lambda x: x[1]):
+        group_list = list(group)
+        start_idx = group_list[0][0]
+        end_idx = group_list[-1][0] + 1
+        segments.append((label, start_idx, end_idx))
+    return segments
+
+
+def is_topologies_equal(
+    topology_a: List[Tuple[str,int,int]], 
+    topology_b: List[Tuple[str,int,int]], 
+    minimum_seqment_overlap=5
+):
+    labels_to_check = ('M', 'B', "R", "F") # S, T are checked without overlap by the simple label equality check
+
+    if len(topology_a) != len(topology_b):
+        return False
+    for idx, (label_a_char, label_a_start, label_a_end) in enumerate(topology_a):
+        label_b_char, label_b_start, label_b_end = topology_b[idx] # Unpack current segment from topology_b
+
+        if label_a_char != label_b_char:
+            # mismatch - the two topologies have a different segment here.
+            return False
+        
+        # Only perform overlap check for specific labels ('M', 'B', 'R', 'F')
+        if label_a_char in labels_to_check:
+            # Ensure we don't go out of bounds for the next segment if it's the last one
+            if idx + 1 >= len(topology_a) or idx + 1 >= len(topology_b):
+                # If it's the last segment of a type that requires overlap check,
+                # and the labels matched, we consider this a match for the segment.
+                continue
+
+            # Calculate overlap of current segments based on start and end positions
+            overlap_segment_start = max(label_a_start, label_b_start)
+            overlap_segment_end = min(label_a_end, label_b_end)
+            
+            current_minimum_segment_overlap = minimum_seqment_overlap
+            if label_a_char == 'B': # Special case for Beta regions
+                current_minimum_segment_overlap = 3
+            
+            if overlap_segment_end - overlap_segment_start < current_minimum_segment_overlap:
+                return False
+    return True
+
+
+
 def aggregate_topology_predictions(
     all_topology_preds: List[str], 
-    all_marginal_probs: List[torch.Tensor]
+    all_marginal_probs: List[Dict[int, np.ndarray]]
 ) -> Tuple[str, Dict[int, np.ndarray]]:
     """
     Ensemble aggregation for topology and marginal probabilities.
     Maps raw state marginals to simplified categories for plotting.
     """
-    agreements = [0] * len(all_topology_preds)
-    for i in range(len(all_topology_preds)):
-        for j in range(len(all_topology_preds)):
-            if i != j and all_topology_preds[i] == all_topology_preds[j]:
+
+    all_topologies_structured = [convert_to_segments(topology) for topology in all_topology_preds]
+    
+    agreements = [0] * len(all_topologies_structured)
+    for i in range(len(all_topologies_structured)):
+        for j in range(len(all_topologies_structured)):
+            if i != j and is_topologies_equal(all_topologies_structured[i], all_topologies_structured[j]):
                 agreements[i] += 1
     
     max_agreements = max(agreements)
-    best_indices = [i for i, count in enumerate(agreements) if count == max_agreements]
-    
+    best_indices = [i for i, count in enumerate(agreements) if count == max_agreements]    
     # Tie-breaking: picks the first among the tied models
     best_idx = best_indices[0]
     final_topology = all_topology_preds[best_idx]
-    final_marginals_raw = all_marginal_probs[best_idx]
-    
-    # Aggregate marginals using the static categorical mapping
-    category_probs = {}
-    for state_idx, cat_idx in MARGINAL_CATEGORY_MAPPING.items():
-        probs = final_marginals_raw[:, state_idx].cpu().numpy()
-        if cat_idx not in category_probs:
-            category_probs[cat_idx] = probs
-        else:
-            category_probs[cat_idx] += probs
+    final_marginals = all_marginal_probs[best_idx]
             
-    return final_topology, category_probs
+    return final_topology, final_marginals
 
 def aggregate_memtype_predictions(all_memtype_probs: List[torch.Tensor]) -> Tuple[List[int], torch.Tensor]:
     """Averaging and thresholding for multi-label membrane type predictions."""
