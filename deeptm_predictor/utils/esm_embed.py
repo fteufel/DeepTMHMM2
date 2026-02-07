@@ -35,7 +35,7 @@ def get_embedding(sequence: str, esm_model, esm_alphabet, device: str) -> torch.
         current_toks = toks[:, start:end]
         
         with torch.no_grad():
-            tokens = esm_model(current_toks.to('cpu'), repr_layers=[repr_layers], return_contacts=False)["representations"][repr_layers]
+            tokens = esm_model(current_toks, repr_layers=[repr_layers], return_contacts=False)["representations"][repr_layers]
             
         # for the first chunk, remove BOS token, for the last chunk, remove EOS token
         if start == 0 and end < minibatch_max_length:
