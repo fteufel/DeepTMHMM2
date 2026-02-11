@@ -113,13 +113,15 @@ def main():
             pred_mem_indices, mem_probs = aggregate_memtype_predictions(all_mem_probs)
             final_topo_ab = suppress_implausible_predictions(final_topo_ab)
 
+
+            # Select main membrane type from predicted indices (highest probability among valid predictions)
+            main_mem_idx = max(pred_mem_indices, key=lambda i: mem_probs[i])
+            main_mem_name = MEMBRANE_TYPE_NAMES[main_mem_idx]
+            
             # if we don't work in simplified I-O topo, need to map to actual sides
             if args.simplify_io:
                 final_topo_out = final_topo_ab
             else:
-                supported_indices = list(MEMBRANE_TYPE_THRESHOLDS.keys())
-                main_mem_idx = supported_indices[np.argmax([mem_probs[i] for i in supported_indices])]
-                main_mem_name = MEMBRANE_TYPE_NAMES[main_mem_idx]
                 final_topo_out = translate_ab_topology(final_topo_ab, main_mem_idx)
             
             # The technical regions with biological names (renamed segments)
