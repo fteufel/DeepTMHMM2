@@ -23,7 +23,8 @@ dependencies = [
     "tqdm",
     "pandas",
     "lightning",
-    "matplotlib"
+    "matplotlib",
+    "omegaconf",
 ]
 
 [project.scripts]
