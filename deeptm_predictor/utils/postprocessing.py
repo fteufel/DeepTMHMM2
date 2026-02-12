@@ -94,10 +94,18 @@ def is_topologies_equal(
     topology_b: List[Tuple[str,int,int]], 
     minimum_seqment_overlap=5
 ):
-    labels_to_check = ('M', 'B', "R", "F") # S, T are checked without overlap by the simple label equality check
+    labels_to_check = ('M', 'B', "R", "F")
 
     if len(topology_a) != len(topology_b):
         return False
+
+    # Check for N-terminal Signal Peptide or Transit Peptide presence mismatch
+    if len(topology_a) > 0:
+        if (topology_a[0][0] == 'S') != (topology_b[0][0] == 'S'):
+            return False
+        if (topology_a[0][0] == '>') != (topology_b[0][0] == '>'):
+            return False
+
     for idx, (label_a_char, label_a_start, label_a_end) in enumerate(topology_a):
         label_b_char, label_b_start, label_b_end = topology_b[idx] # Unpack current segment from topology_b
 
