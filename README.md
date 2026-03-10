@@ -1,6 +1,6 @@
-# DeepTM Predictor
+# DeepTMHMM 2
 
-DeepTM is a transmembrane protein topology and membrane type predictor.
+DeepTMHMM 2 is a transmembrane protein topology and membrane type predictor.
 
 ## TODO before release
 - Memtype suppression for globular proteins: do we want to still predict memtype if there's an R/F in the topology?
@@ -29,12 +29,12 @@ pip install .
 Basic usage with default checkpoints:
 
 ```bash
-deeptm-predict --fasta input.fasta --output-dir results
+dtm2 input.fasta results
 ```
 
 ### Options
-- `--fasta`: Path to input FASTA file.
-- `--output-dir`: Directory where results will be saved.
+- `input.fasta`: Path to input FASTA file.
+- `results`: Directory where results will be saved. Will be created if it doesn't exist.
 - `--model-dir`: (Optional) Directory containing custom `.ckpt` files. Must contain exactly 5 `topology_*.ckpt` and 5 `memtype_*.ckpt` files, otherwise the tool will abort.
 - `--simplify-io`: (Flag) Use generic `i/o` (inside/outside) labels instead of membrane-specific character sets.
 - `--plot`: (Flag) Generate horizontal bar plots and posterior probability tracks for each prediction.

@@ -1,5 +1,5 @@
 """
-Main entry point for DeepTM prediction.
+Main entry point for DeepTMHMM 2 prediction.
 Orchestrates model loading, sequence embedding generation, ensemble inference, and output formatting.
 """
 
@@ -36,9 +36,9 @@ from .utils.postprocessing import (
 )
 
 def main():
-    parser = argparse.ArgumentParser(description="DeepTM Prediction Tool")
-    parser.add_argument("--fasta", required=True, help="Input FASTA file")
-    parser.add_argument("--output-dir", required=True, help="Output directory")
+    parser = argparse.ArgumentParser(description="DeepTMHMM 2 Prediction Tool")
+    parser.add_argument("fasta", required=True, help="Input FASTA file")
+    parser.add_argument("output-dir", required=True, help="Output directory")
     parser.add_argument("--model-dir", default=None, help="Directory containing model checkpoints (optional)")
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu", help="Device to run on")
     parser.add_argument("--simplify-io", action="store_true", help="Use generic inside/outside labels instead of membrane-specific characters")

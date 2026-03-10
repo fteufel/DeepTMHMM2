@@ -1,5 +1,5 @@
 """
-Constants and static mappings for the DeepTM predictor.
+Constants and static mappings for the DeepTMHMM 2 predictor.
 Contains model paths, membrane type names, CRF configurations, and label translations.
 """
 

@@ -28,7 +28,7 @@ dependencies = [
 ]
 
 [project.scripts]
-deeptm-predict = "deeptm_predictor.main:main"
+dtm2 = "deeptmhmm2_predictor.main:main"
 
 [project.urls]
 "Homepage" = "https://github.com/user/deeptm_predictor" # Placeholder
