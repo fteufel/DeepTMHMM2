@@ -116,7 +116,8 @@ def main():
 
             # Select main membrane type from predicted indices (highest probability among valid predictions)
             main_mem_idx = max(pred_mem_indices, key=lambda i: mem_probs[i])
-            main_mem_name = MEMBRANE_TYPE_NAMES[main_mem_idx]
+            # infer predicted protein type
+            type_code = infer_structural_type(final_topo_ab)
             
             # if we don't work in simplified I-O topo, need to map to actual sides
             if args.simplify_io:
@@ -125,10 +126,13 @@ def main():
                 final_topo_out = translate_ab_topology(final_topo_ab, main_mem_idx)
             
             # The technical regions with biological names (renamed segments)
-            named_regions = get_named_regions(final_topo_ab, main_mem_idx, args.simplify_io)
+            named_regions = get_named_regions(
+                final_topo_ab, 
+                main_mem_idx, 
+                args.simplify_io if type_code not in ["I", "S", "T"] else True # always simplify for non-TM proteins
+                )
             
             # Information mapping for headers
-            type_code = infer_structural_type(final_topo_ab)
             type = DISPLAY_PROT_TYPE_MAPPING[type_code]
             predicted_mem_names = [MEMBRANE_TYPE_NAMES[idx] for idx in pred_mem_indices]
             mem_names_str = "; ".join(predicted_mem_names)
@@ -137,6 +141,8 @@ def main():
             if type_code in ["I", "S", "T"]:
                 predicted_mem_names = []
                 mem_names_str = ""
+                mem_probs = np.zeros_like(mem_probs)
+                final_topo_out = final_topo_ab.replace("a", "I").replace("b", "O")
 
             # The full info for this sample - json format.
             sample_record = {

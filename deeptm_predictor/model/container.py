@@ -22,6 +22,10 @@ class ModelContainer:
         self.to(self.device)
         for model in self.topology_models:
             model.predict_marginals = True
+            model.eval()
+
+        for model in self.memtype_models:
+            model.eval()
 
     def to(self, device: str) -> "ModelContainer":
         for model in self.topology_models:
