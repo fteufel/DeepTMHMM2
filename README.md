@@ -3,14 +3,10 @@
 DeepTMHMM 2 is a transmembrane protein topology and membrane type predictor.
 
 ## TODO before release
-- Memtype suppression for globular proteins: do we want to still predict memtype if there's an R/F in the topology?
 - Clean up and fully document output types
 - Make visualization less 2010s
-- Handling of model weights at install time
 - run test set with all memtypes and protein cases
-- Clean up pyproject.toml, add license
 - Check with biolib for compatibility reqs
-- Pin dependency versions
 
 
 ## Features
@@ -20,9 +16,12 @@ DeepTMHMM 2 is a transmembrane protein topology and membrane type predictor.
 
 ## Installation
 
+You can either clone the repo and install or install directly from github:
 ```bash
-pip install .
+pip install git+https://github.com/fteufel/DeepTMHMM2.git
 ```
+
+When running for the first time, DeepTMHMM 2 will fetch model weights from GitHub and cache them in `~/.cache/deeptmhmm2/`. This requires an internet connection. If you want to run DeepTMHMM 2 offline, you can download the model weights manually and place them in any directory of your choice. Then, use the `--model-dir` option to specify the path to the directory containing the model weights.
 
 ## Usage
 

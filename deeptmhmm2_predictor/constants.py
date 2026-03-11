@@ -1,25 +1,11 @@
 """
 Constants and static mappings for the DeepTMHMM 2 predictor.
-Contains model paths, membrane type names, CRF configurations, and label translations.
+Contains membrane type names, CRF configurations, and label translations.
+
+Model checkpoint paths are managed by weights.py.
 """
 
 from typing import List, Dict, Any
-
-# Hardcoded configuration from config_with_tp_split_io.yaml
-TOPOLOGY_MODEL_CHECKPOINTS: List[str] = [
-    'checkpoints/topology_0.ckpt',
-    'checkpoints/topology_1.ckpt',
-    'checkpoints/topology_2.ckpt',
-    'checkpoints/topology_3.ckpt',
-    'checkpoints/topology_4.ckpt'
-]
-MEMTYPE_MODEL_CHECKPOINTS: List[str] = [
-    'checkpoints/memtype_0.ckpt',
-    'checkpoints/memtype_1.ckpt',
-    'checkpoints/memtype_2.ckpt',
-    'checkpoints/memtype_3.ckpt',
-    'checkpoints/memtype_4.ckpt',
-]
 
 # Supported membrane type names and their indices in the model
 MEMBRANE_TYPE_NAMES: Dict[int, str] = {

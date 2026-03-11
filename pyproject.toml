@@ -3,12 +3,12 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "deeptm_predictor"
+name = "deeptmhmm2_predictor"
 version = "0.1.0"
 authors = [
-  { name="Gemini", email="gemini@google.com" },
+  { name = "Felix Teufel", email = "felix.teufel@bio.ku.dk" },
 ]
-description = "A prediction-only package for DeepTM."
+description = "DeepTMHMM 2 membrane protein topology predictor."
 readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [
@@ -17,21 +17,21 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "torch",
-    "biopython",
-    "fair-esm",
-    "tqdm",
-    "pandas",
-    "lightning",
-    "matplotlib",
-    "omegaconf",
+    "torch==2.10.0",
+    "biopython==1.86",
+    "fair-esm==2.0.0",
+    "tqdm==4.67.2",
+    "pandas==3.0.0",
+    "lightning==2.6.1",
+    "matplotlib==3.10.8",
+    "omegaconf==2.3.0",
 ]
 
 [project.scripts]
 dtm2 = "deeptmhmm2_predictor.main:main"
 
 [project.urls]
-"Homepage" = "https://github.com/user/deeptm_predictor" # Placeholder
+"Homepage" = "https://github.com/fteufel/DeepTMHMM2" # Placeholder
 
 [tool.setuptools.packages.find]
-include = ["deeptm_predictor*"]
+include = ["deeptmhmm2_predictor*"]

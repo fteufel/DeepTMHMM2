@@ -16,12 +16,11 @@ from tqdm import tqdm
 from esm import pretrained
 
 from .constants import (
-    TOPOLOGY_MODEL_CHECKPOINTS,
-    MEMTYPE_MODEL_CHECKPOINTS,
     MEMBRANE_TYPE_NAMES,
     DISPLAY_PROT_TYPE_MAPPING,
     MEMBRANE_TYPE_THRESHOLDS
 )
+from .weights import ensure_weights
 from .model.container import ModelContainer
 from .utils.esm_embed import get_embedding
 from .utils.formats import gff3_format
@@ -37,8 +36,8 @@ from .utils.postprocessing import (
 
 def main():
     parser = argparse.ArgumentParser(description="DeepTMHMM 2 Prediction Tool")
-    parser.add_argument("fasta", required=True, help="Input FASTA file")
-    parser.add_argument("output-dir", required=True, help="Output directory")
+    parser.add_argument("fasta", help="Input FASTA file")
+    parser.add_argument("output_dir", help="Output directory")
     parser.add_argument("--model-dir", default=None, help="Directory containing model checkpoints (optional)")
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu", help="Device to run on")
     parser.add_argument("--simplify-io", action="store_true", help="Use generic inside/outside labels instead of membrane-specific characters")
@@ -49,20 +48,20 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
 
     # 1. Setup checkpoints
-    topo_ckpts = TOPOLOGY_MODEL_CHECKPOINTS
-    mem_ckpts = MEMTYPE_MODEL_CHECKPOINTS
-    
     if args.model_dir:
+        # User supplied a custom directory — use it directly, no download needed
         model_path = Path(args.model_dir)
         found_topo = sorted([str(p) for p in model_path.glob("topology_*.ckpt")])
         found_mem = sorted([str(p) for p in model_path.glob("memtype_*.ckpt")])
-        
+
         if len(found_topo) != 5 or len(found_mem) != 5:
             print(f"Error: Expected exactly 5 topology_*.ckpt and 5 memtype_*.ckpt files in {args.model_dir}")
             sys.exit(1)
-            
-        topo_ckpts = found_topo
-        mem_ckpts = found_mem
+
+        topo_ckpts, mem_ckpts = found_topo, found_mem
+    else:
+        # Download to ~/.cache/deeptmhmm2/ on first use; cached thereafter
+        topo_ckpts, mem_ckpts = ensure_weights()
 
     # 2. Load models
     print("Loading models...")
