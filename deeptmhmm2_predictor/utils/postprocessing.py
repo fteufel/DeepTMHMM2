@@ -37,11 +37,12 @@ def translate_ab_topology(topology: str, mem_type_idx: int, simplify_io: bool = 
     - generic i/o labels (if simplify_io is True)
     """
     if simplify_io:
-        translation_map = {'a': 'i', 'b': 'o'}
+        translation_map = {'a': 'I', 'b': 'O'}
     elif mem_type_idx in MEMBRANE_TOPOLOGY_MAP:
         translation_map = MEMBRANE_TOPOLOGY_MAP[mem_type_idx]
     else:
-        return topology
+        # Default fallback if we don't have a mapping.
+        translation_map = {'a': 'I', 'b': 'O'} 
         
     return "".join([translation_map.get(c, c) for c in topology])
 

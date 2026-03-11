@@ -119,10 +119,7 @@ def main():
             type_code = infer_structural_type(final_topo_ab)
             
             # if we don't work in simplified I-O topo, need to map to actual sides
-            if args.simplify_io:
-                final_topo_out = final_topo_ab
-            else:
-                final_topo_out = translate_ab_topology(final_topo_ab, main_mem_idx)
+            final_topo_out = translate_ab_topology(final_topo_ab, main_mem_idx, args.simplify_io)
             
             # The technical regions with biological names (renamed segments)
             named_regions = get_named_regions(

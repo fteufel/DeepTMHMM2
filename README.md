@@ -16,10 +16,12 @@ DeepTMHMM 2 is a transmembrane protein topology and membrane type predictor.
 
 ## Installation
 
-You can either clone the repo and install or install directly from github:
+You can either clone the repo and install or install directly from GitHub:
 ```bash
 pip install git+https://github.com/fteufel/DeepTMHMM2.git
 ```
+
+This will install the `dtm2` command line tool.
 
 When running for the first time, DeepTMHMM 2 will fetch model weights from GitHub and cache them in `~/.cache/deeptmhmm2/`. This requires an internet connection. If you want to run DeepTMHMM 2 offline, you can download the model weights manually and place them in any directory of your choice. Then, use the `--model-dir` option to specify the path to the directory containing the model weights.
 
@@ -32,16 +34,20 @@ dtm2 input.fasta results
 ```
 
 ### Options
-- `input.fasta`: Path to input FASTA file.
-- `results`: Directory where results will be saved. Will be created if it doesn't exist.
-- `--model-dir`: (Optional) Directory containing custom `.ckpt` files. Must contain exactly 5 `topology_*.ckpt` and 5 `memtype_*.ckpt` files, otherwise the tool will abort.
-- `--simplify-io`: (Flag) Use generic `i/o` (inside/outside) labels instead of membrane-specific character sets.
-- `--plot`: (Flag) Generate horizontal bar plots and posterior probability tracks for each prediction.
-- `--device`: Device to run inference on (defaults to `cuda` if available). We advise against using device `mps` on Apple Silicon, as we have observed numerical inconsistencies in the language model embedding that lead to wrong predictions.
+
+Argument | Type  | Description |
+--- | --- | ---|
+`input.fasta` | `str`  |Path to input FASTA file. Must be specified. |
+`results` | `str`  |Directory where results will be saved. Will be created if it doesn't exist. |
+`--model-dir` | `str`  |Directory containing the `.ckpt` files. Must contain exactly 5 `topology_*.ckpt` and 5 `memtype_*.ckpt` files, otherwise the tool will abort. If not provided, defaults to the cache, downloading if necessary. |
+`--simplify-io` | Flag  | Use generic `I/O` (inside/outside) labels instead of membrane-specific characters. |
+`--plot` | Flag  | Generate horizontal bar plots and posterior probability tracks for each prediction. |
+`--device` | `str`  | (Optional) Device to run inference on (defaults to `cuda` if available, else `cpu`). Do not use `mps` on Apple Silicon, as we have observed numerical inconsistencies in the ESM2 language model embedding that lead to wrong predictions. |
+
 
 ## Outputs
-- `predicted_topologies.3line`: Standard 3-line format.
-- `TMRs.gff3`: GFF3 formatted regions with biological names.
+- `predicted_topologies.3line`: Format with 3 lines per sequence:  fasta header, amino acid sequence, and predicted topology string.
+- `TMRs.gff3`: GFF3 formatted predicted topology elements.
 - `predictions.json`: Detailed JSON summary of all predictions.
 - `*_plot.png`: Visualizations of the prediction (only generated if `--plot` is used).
 
