@@ -57,3 +57,27 @@ The `predictions.json` file contains an array of objects for each sequence:
 - **`type`**: Simplified structural classification (e.g., `Alpha TM`, `Beta Barrel`, `Globular + SP`).
 - **`membrane_type`**: Human-readable name of the predicted membrane environment.
 - **`topology`**: Predicted topology string (translated or simplified).
+
+### Inside and outside definitions
+
+Each membrane type has its own mapping of the two topological sides "inside" and "outside" to the context of its specific environment. The following table summarizes the mapping for each membrane type. Note that the terms "inside" and "outside" reflect the topology of the secretory pathway, so "outside" is the side that can have a signal peptide, so the assignment may be counterintuitive for intracellular organelles at first sight.
+
+Membrane | Inside | Outside
+--- | --- | ---
+Archaebacterial membrane | Cytoplasmic | Extracellular
+Bacterial Gram-negative inner membrane | Cytoplasmic | Periplasmic
+Bacterial Gram-negative outer membrane | Extracellular | Periplasmic
+Eukaryotic plasma membrane | Cytoplasmic | Extracellular
+Mitochondrial inner membrane | Mitochondrial matrix | Intermembrane space
+Endoplasmic reticulum membrane | Cytoplasmic | Lumenal
+Thylakoid membrane | Stroma | Thylakoid space
+Bacterial Gram-positive plasma membrane | Cytoplasmic | Periplasmic
+Golgi membrane | Cytoplasmic | Lumenal
+Nuclear inner membrane | Nucleus matrix | Intermembrane space
+Endosome membrane | Cytoplasmic | Lumenal
+Vacuole membrane | Cytoplasmic | Lumenal
+Vesicle membrane | Cytoplasmic | Lumenal
+Viral membrane | Intravirion | Virion surface
+Chloroplast outer membrane | Intermembrane space | Cytoplasmic
+Mitochondrial outer membrane | Intermembrane space | Cytoplasmic
+Lysosome membrane | Cytoplasmic | Lumenal

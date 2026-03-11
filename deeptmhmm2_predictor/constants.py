@@ -83,7 +83,7 @@ CRF_CONFIG: Dict[str, Any] = {
 MEMBRANE_TOPOLOGY_MAP: Dict[int, Dict[str, str]] = {
     0: {'a': 'A', 'b': 'a'}, # Archaebacterial membrane|cytoplasmic/extracellular
     1: {'a': 'C', 'b': 'c'}, # Bacterial Gram-negative inner membrane|cytoplasmic/periplasm
-    2: {'a': 'D', 'b': 'd'}, # Bacterial Gram-negative outer membrane|periplasm/extracellular
+    2: {'b': 'D', 'a': 'd'}, # Bacterial Gram-negative outer membrane|periplasm/extracellular
     3: {'a': 'E', 'b': 'e'}, # Eukaryotic plasma membrane cytoplasmic side extracellular side
     4: {'a': 'G', 'b': 'g'}, # Mitochondrial inner membrane mitochondrial matrix intermembrane space
     5: {'a': 'H', 'b': 'h'}, # Endoplasmic reticulum membrane cytoplasmic side lumenal side
@@ -97,8 +97,8 @@ MEMBRANE_TOPOLOGY_MAP: Dict[int, Dict[str, str]] = {
     13: {'a': 'T', 'b': 't'}, # Vesicle membrane cytoplasmic side lumenal side
     14: {'a': 'V', 'b': 'v'}, # Viral membrane intravirion side virion surface
     15: {'a': 'W', 'b': 'w'}, # Chloroplast inner membrane stroma intermembrane space
-    16: {'a': 'X', 'b': 'x'}, # Chloroplast outer membrane cytoplasmic side intermembrane space
-    17: {'a': 'Y', 'b': 'y'}, # Mitochondrial outer membrane cytoplasmic side intermembrane space
+    16: {'b': 'X', 'a': 'x'}, # Chloroplast outer membrane cytoplasmic side(b) / intermembrane space(a)
+    17: {'b': 'Y', 'a': 'y'}, # Mitochondrial outer membrane cytoplasmic side(b) / intermembrane space(a)
     18: {'a': '3', 'b': '4'}, # Lysosome membrane cytoplasmic side lumenal side
     19: {'a': '5', 'b': '6'}, # Nuclear outer membrane cytoplasmic side intermembrane space
     20: {'a': '7', 'b': '8'}, # Cytoplasmic granule membrane cytoplasmic side intermembrane space
@@ -107,7 +107,7 @@ MEMBRANE_TOPOLOGY_MAP: Dict[int, Dict[str, str]] = {
 MEMBRANE_REGION_NAMES: Dict[int, Dict[str, str]] = {
     0: {'a': 'Cytoplasmic', 'b': 'Extracellular'},
     1: {'a': 'Cytoplasmic', 'b': 'Periplasmic'},
-    2: {'a': 'Periplasmic', 'b': 'Extracellular'},
+    2: {'a': 'Extracellular', 'b': 'Periplasmic'},
     3: {'a': 'Cytoplasmic', 'b': 'Extracellular'},
     4: {'a': 'Mitochondrial matrix', 'b': 'Intermembrane space'},
     5: {'a': 'Cytoplasmic', 'b': 'Lumenal'},
@@ -121,8 +121,8 @@ MEMBRANE_REGION_NAMES: Dict[int, Dict[str, str]] = {
     13: {'a': 'Cytoplasmic', 'b': 'Lumenal'},
     14: {'a': 'Intravirion', 'b': 'Virion surface'},
     15: {'a': 'Stroma', 'b': 'Intermembrane space'},
-    16: {'a': 'Cytoplasmic', 'b': 'Intermembrane space'},
-    17: {'a': 'Cytoplasmic', 'b': 'Intermembrane space'},
+    16: {'a': 'Intermembrane space', 'b': 'Cytoplasmic'},
+    17: {'a': 'Intermembrane space', 'b': 'Cytoplasmic'},
     18: {'a': 'Cytoplasmic', 'b': 'Lumenal'},
     19: {'a': 'Cytoplasmic', 'b': 'Intermembrane space'},
     20: {'a': 'Cytoplasmic', 'b': 'Intermembrane space'},
