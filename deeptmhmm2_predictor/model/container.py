@@ -41,7 +41,7 @@ class ModelContainer:
 
             emissions = top_model._get_network_emissions(embedding, mask)
             if temperature != 1.0:
-                emissions = emissions * temperature
+                emissions = emissions / temperature
 
             paths = top_model.crf.decode(emissions, mask.byte())
             simple_paths = top_model.simplify_labels(paths)

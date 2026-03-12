@@ -42,7 +42,7 @@ def main():
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu", help="Device to run on")
     parser.add_argument("--simplify-io", action="store_true", help="Use generic inside/outside labels instead of membrane-specific characters")
     parser.add_argument("--plot", action="store_true", help="Generate horizontal bar plots for each prediction")
-    parser.add_argument("--temperature", type=float, default=1.0, help="Emission temperature scaling (>1 sharpens posteriors, default: 1.0)")
+    parser.add_argument("--temperature", type=float, default=1.0, help="CRF emission temperature (< 1 sharpens posteriors, > 1 flattens, default: 1.0)")
     args = parser.parse_args()
 
     out_dir = Path(args.output_dir)
