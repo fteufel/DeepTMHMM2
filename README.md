@@ -27,7 +27,7 @@ When running for the first time, DeepTMHMM 2 will fetch model weights from GitHu
 
 ## Usage
 
-Basic usage with default checkpoints:
+Basic usage with fasta input:
 
 ```bash
 dtm2 input.fasta results
@@ -45,13 +45,15 @@ Argument | Type  | Description |
 `--device` | `str`  | (Optional) Device to run inference on (defaults to `cuda` if available, else `cpu`). Do not use `mps` on Apple Silicon, as we have observed numerical inconsistencies in the ESM2 language model embedding that lead to wrong predictions. |
 
 
-## Outputs
+### Output files
 - `predicted_topologies.3line`: Format with 3 lines per sequence:  fasta header, amino acid sequence, and predicted topology string.
 - `TMRs.gff3`: GFF3 formatted predicted topology elements.
 - `predictions.json`: Detailed JSON summary of all predictions.
+- `membrane_types.tsv`: TSV formatted predicted membrane type probabilities.
 - `*_plot.png`: Visualizations of the prediction (only generated if `--plot` is used).
 
-### JSON Output Format (`predictions.json`)
+**JSON Output Format** (`predictions.json`):
+
 The `predictions.json` file contains an array of objects for each sequence:
 - **`id`**: Sequence identifier from the FASTA header.
 - **`type`**: Simplified structural classification (e.g., `Alpha TM`, `Beta Barrel`, `Globular + SP`).
@@ -81,3 +83,37 @@ Viral membrane | Intravirion | Virion surface
 Chloroplast outer membrane | Intermembrane space | Cytoplasmic
 Mitochondrial outer membrane | Intermembrane space | Cytoplasmic
 Lysosome membrane | Cytoplasmic | Lumenal
+
+### Python API
+
+You can also use DeepTMHMM 2 in custom Python code instead of relying on the CLI:
+
+```python
+from deeptmhmm2_predictor import DeepTMHMM2
+
+
+# Load the model
+model = DeepTMHMM2(device='cpu')
+
+# Predict
+# `data` can be a list or dict of amino acid sequences
+# if dict, keys will be used as identifiers.
+preds = model.predict(data)
+
+# Save results
+preds.to_json('predictions.json')
+preds.to_3line('predicted_topologies.3line')
+preds.to_gff3('TMRs.gff3')
+preds.to_memtype_csv('membrane_types.tsv')
+
+# Results are iterable - you can access individual 
+# predictions by index or id and plot them, or access 
+# their properties directly.
+preds[0].plot(out_dir)
+
+print(preds[0].type)
+print(preds[0].topology_string)
+print(preds[0].segments)
+print(preds[0].membrane_types)
+print(preds[0].membrane_types_probabilities)
+```
