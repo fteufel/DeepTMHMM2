@@ -94,6 +94,9 @@ class Prediction:
 
     def plot(self, output_dir: Union[str, Path]) -> None:
         """Save a topology + posterior probability plot to *output_dir*."""
+        if self._marginals is None:
+            print(f"Warning: no marginal probabilities available for {self.id}, skipping plot.")
+            return
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         mem_names_str = "; ".join(self.membrane_types)
@@ -277,6 +280,7 @@ class DeepTMHMM2:
         sequences: Union[List[str], Dict[str, str], List],
         simplify_io: bool = False,
         progress_bar: bool = True,
+        compute_marginals: bool = False,
     ) -> PredictionCollection:
         """Run inference on one or more amino acid sequences.
 
@@ -320,7 +324,7 @@ class DeepTMHMM2:
                 # --- ensemble inference ---
                 all_topo, all_mem_probs, all_marginals = [], [], []
                 for i in range(len(self._models.topology_models)):
-                    t, m_p, marg, _ = self._models.predict_single_model(i, embedding, mask)
+                    t, m_p, marg, _ = self._models.predict_single_model(i, embedding, mask, compute_marginals=compute_marginals)
                     all_topo.append(t)
                     all_mem_probs.append(m_p)
                     all_marginals.append(marg)

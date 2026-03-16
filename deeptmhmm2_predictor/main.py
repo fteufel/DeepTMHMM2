@@ -97,7 +97,7 @@ def main():
             # Run inference across all ensemble members
             all_topo, all_mem_probs, all_marginals = [], [], []
             for i in range(len(models.topology_models)):
-                t, m_p, marg, _ = models.predict_single_model(i, embedding, mask)
+                t, m_p, marg, _ = models.predict_single_model(i, embedding, mask, compute_marginals=args.plot)
                 all_topo.append(t)
                 all_mem_probs.append(m_p)
                 all_marginals.append(marg)

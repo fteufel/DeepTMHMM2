@@ -34,15 +34,15 @@ class ModelContainer:
             model.to(device)
         return self
 
-    def predict_single_model(self, model_idx: int, embedding: torch.Tensor, mask: torch.Tensor) -> Tuple[str, torch.Tensor, dict, float]:
+    def predict_single_model(self, model_idx: int, embedding: torch.Tensor, mask: torch.Tensor, compute_marginals: bool=False) -> Tuple[str, torch.Tensor, dict, float]:
         with torch.no_grad():
             top_model = self.topology_models[model_idx]
             mem_model = self.memtype_models[model_idx]
 
-            (simple_paths, marginals) = top_model(embedding, mask, compute_marginals=True)
+            (simple_paths, marginals) = top_model(embedding, mask, compute_marginals=compute_marginals)
             topology_str = top_model.crf_config.get_string_from_labels(simple_paths[0])
             
-            simplified_marginals = top_model.crf_config.simplify_marginals(marginals[0])
+            simplified_marginals = top_model.crf_config.simplify_marginals(marginals[0]) if marginals is not None else None
             
             mem_type_probs = mem_model(embedding, mask)
             

@@ -138,8 +138,8 @@ def is_topologies_equal(
 
 def aggregate_topology_predictions(
     all_topology_preds: List[str], 
-    all_marginal_probs: List[Dict[int, np.ndarray]]
-) -> Tuple[str, Dict[int, np.ndarray]]:
+    all_marginal_probs: List[Dict[int, np.ndarray | None]]
+) -> Tuple[str, Dict[int, np.ndarray | None]]:
     """
     Ensemble aggregation for topology and marginal probabilities.
     Maps raw state marginals to simplified categories for plotting.
