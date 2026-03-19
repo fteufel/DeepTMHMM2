@@ -25,6 +25,7 @@ class SP5DeepTMHMM(nn.Module):
                  n_filters = 512,#32,
                  filter_size_in = 3,
                  filter_size_out = 5,
+                 extend_first_tm: bool = False,
                  **kwargs
                  ):
         """
@@ -59,7 +60,7 @@ class SP5DeepTMHMM(nn.Module):
         """
         super(SP5DeepTMHMM, self).__init__()
 
-        crf_config = SplitIOCRFwithTPConfig(**CRF_CONFIG)
+        crf_config = SplitIOCRFwithTPConfig(**CRF_CONFIG, extend_first_tm=extend_first_tm)
         self.crf_config = crf_config
 
         # configure NN

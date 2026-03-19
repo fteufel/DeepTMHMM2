@@ -1,5 +1,5 @@
 import torch
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 from .lightning_deeptmhmm import DeepTMLightning
 from .lightning_memtype import MembraneTypeLightning
 
@@ -53,3 +53,37 @@ class ModelContainer:
             mem_type_probs = mem_model(embedding, mask)
 
         return topology_str, mem_type_probs, simplified_marginals, 0.0
+
+    def predict_posterior_samples(
+        self,
+        model_idx: int,
+        embedding: torch.Tensor,
+        mask: torch.Tensor,
+        n_samples: int = 100,
+        temperature: float = 1.0,
+    ) -> Tuple[List[str], List[List[int]], torch.Tensor]:
+        """Draw n_samples paths from the CRF posterior of a single ensemble model.
+
+        Returns:
+            topology_strings: list of topology strings (simplified a/b/M/S/... alphabet)
+            raw_paths: list of raw CRF state sequences (before simplification)
+            emissions: the emission tensor used (for external scoring)
+        """
+        with torch.no_grad():
+            top_model = self.topology_models[model_idx]
+            emissions = top_model._get_network_emissions(embedding, mask)
+            if temperature != 1.0:
+                emissions = emissions / temperature
+
+            # sample_from_posterior returns (n_samples, batch_size, seq_len)
+            raw_samples = top_model.crf.sample_from_posterior(emissions, mask.byte(), n_samples=n_samples)
+
+        topology_strings = []
+        raw_paths = []
+        for batch_paths in raw_samples:
+            raw_paths.append(batch_paths[0])  # batch_size=1
+            simple_paths = top_model.simplify_labels(batch_paths)
+            topo_str = top_model.crf_config.get_string_from_labels(simple_paths[0])
+            topology_strings.append(topo_str)
+
+        return topology_strings, raw_paths, emissions

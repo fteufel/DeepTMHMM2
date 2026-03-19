@@ -60,6 +60,7 @@ class SplitIOCRFwithTPConfig:
             minimum_segment_lengths: Dict[str, int] = None,
             use_start_end_transitions: bool = True,
             type_label_to_int: Dict[str, int] = None,
+            extend_first_tm: bool = False,
             ):
         """
         A 4-side CRF configuration with signal, transit, alpha, beta, reentrant and interfacial regions.
@@ -126,6 +127,17 @@ class SplitIOCRFwithTPConfig:
                 self.crf_states[tm_type+str(i)] = crf_next_state
                 crf_next_state += 1
 
+        self.extend_first_tm = extend_first_tm
+        if extend_first_tm:
+            # Post-TM outside states (reached after the first TM crossing)
+            self.crf_states["a_alpha_post"] = crf_next_state; crf_next_state += 1
+            self.crf_states["b_alpha_post"] = crf_next_state; crf_next_state += 1
+            # First-TM helix tracks — identical length grammar to Mab/Mba
+            for i in range(max(maximum_segment_lengths["Mab"], minimum_segment_lengths["Mab"])):
+                self.crf_states["Mab1_" + str(i)] = crf_next_state; crf_next_state += 1
+            for i in range(max(maximum_segment_lengths["Mba"], minimum_segment_lengths["Mba"])):
+                self.crf_states["Mba1_" + str(i)] = crf_next_state; crf_next_state += 1
+
         # define allowed transition patterns
 
         self.allowed_state_transitions.append((self.crf_states["a_alpha"], self.crf_states["a_alpha"])) # infinite loop for globular regions
@@ -143,15 +155,27 @@ class SplitIOCRFwithTPConfig:
 
         # transition into the membrane.
         self.allowed_state_transitions.append((self.crf_states["b_beta"], self.crf_states["Bba0"]))
-        self.allowed_state_transitions.append((self.crf_states["b_alpha"], self.crf_states["Mba0"]))
         self.allowed_state_transitions.append((self.crf_states["a_beta"], self.crf_states["Bab0"]))
-        self.allowed_state_transitions.append((self.crf_states["a_alpha"], self.crf_states["Mab0"]))
+        if not extend_first_tm:
+            # Direct entry into alpha-TM (original grammar)
+            self.allowed_state_transitions.append((self.crf_states["b_alpha"], self.crf_states["Mba0"]))
+            self.allowed_state_transitions.append((self.crf_states["a_alpha"], self.crf_states["Mab0"]))
+        else:
+            # First TM goes through Mab1/Mba1 track; second+ TM enters Mab/Mba from post states
+            self.allowed_state_transitions.append((self.crf_states["b_alpha"], self.crf_states["Mba1_0"]))
+            self.allowed_state_transitions.append((self.crf_states["a_alpha"], self.crf_states["Mab1_0"]))
 
         # transitions out of the membrane
         self.allowed_state_transitions.append((self.crf_states["Bba" + str(maximum_segment_lengths["Bba"] - 1)], self.crf_states["a_beta"]))
-        self.allowed_state_transitions.append((self.crf_states["Mba" + str(maximum_segment_lengths["Mba"] - 1)], self.crf_states["a_alpha"]))
         self.allowed_state_transitions.append((self.crf_states["Bab" + str(maximum_segment_lengths["Bab"] - 1)], self.crf_states["b_beta"]))
-        self.allowed_state_transitions.append((self.crf_states["Mab" + str(maximum_segment_lengths["Mab"] - 1)], self.crf_states["b_alpha"]))
+        if not extend_first_tm:
+            # Exit alpha-TM back to globular outside states (original grammar)
+            self.allowed_state_transitions.append((self.crf_states["Mba" + str(maximum_segment_lengths["Mba"] - 1)], self.crf_states["a_alpha"]))
+            self.allowed_state_transitions.append((self.crf_states["Mab" + str(maximum_segment_lengths["Mab"] - 1)], self.crf_states["b_alpha"]))
+        else:
+            # Exit alpha-TM to post states (so second+ TM entry can be separately penalised)
+            self.allowed_state_transitions.append((self.crf_states["Mba" + str(maximum_segment_lengths["Mba"] - 1)], self.crf_states["a_alpha_post"]))
+            self.allowed_state_transitions.append((self.crf_states["Mab" + str(maximum_segment_lengths["Mab"] - 1)], self.crf_states["b_alpha_post"]))
 
         # transitions into reentrant loop / superficial helix
         self.allowed_state_transitions.append((self.crf_states["a_alpha"], self.crf_states["Raa0"]))
@@ -189,6 +213,52 @@ class SplitIOCRFwithTPConfig:
 
 
 
+        if extend_first_tm:
+            # ── Extended-grammar transitions for first-TM track ──────────────────
+            max_mab = maximum_segment_lengths["Mab"]
+            min_mab = minimum_segment_lengths["Mab"]
+            max_mba = maximum_segment_lengths["Mba"]
+            min_mba = minimum_segment_lengths["Mba"]
+
+            # Post-state self-loops (mirror a_alpha / b_alpha self-loops)
+            self.allowed_state_transitions.append((self.crf_states["a_alpha_post"], self.crf_states["a_alpha_post"]))
+            self.allowed_state_transitions.append((self.crf_states["b_alpha_post"], self.crf_states["b_alpha_post"]))
+
+            # Second+ TM entries from post states
+            self.allowed_state_transitions.append((self.crf_states["a_alpha_post"], self.crf_states["Mab0"]))
+            self.allowed_state_transitions.append((self.crf_states["b_alpha_post"], self.crf_states["Mba0"]))
+
+            # Reentrant / interfacial from post states (mirror a_alpha / b_alpha)
+            self.allowed_state_transitions.append((self.crf_states["a_alpha_post"], self.crf_states["Raa0"]))
+            self.allowed_state_transitions.append((self.crf_states["b_alpha_post"], self.crf_states["Rbb0"]))
+            self.allowed_state_transitions.append((self.crf_states["a_alpha_post"], self.crf_states["Faa0"]))
+            self.allowed_state_transitions.append((self.crf_states["b_alpha_post"], self.crf_states["Fbb0"]))
+
+            # Mab1 exits to b_alpha_post (mirror Mab → b_alpha)
+            self.allowed_state_transitions.append((self.crf_states["Mab1_" + str(max_mab - 1)], self.crf_states["b_alpha_post"]))
+            # Mba1 exits to a_alpha_post (mirror Mba → a_alpha)
+            self.allowed_state_transitions.append((self.crf_states["Mba1_" + str(max_mba - 1)], self.crf_states["a_alpha_post"]))
+
+            # Mab1 internal transitions (forward + skip, identical to Mab)
+            start_seg = math.ceil(min_mab / 2)
+            end_seg   = math.floor(min_mab / 2)
+            for i in range(max_mab - 1):
+                self.allowed_state_transitions.append(
+                    (self.crf_states["Mab1_" + str(i)], self.crf_states["Mab1_" + str(i + 1)]))
+                if i >= start_seg + 1 and i <= max_mab - end_seg:
+                    self.allowed_state_transitions.append(
+                        (self.crf_states["Mab1_" + str(start_seg - 1)], self.crf_states["Mab1_" + str(i)]))
+
+            # Mba1 internal transitions (forward + skip, identical to Mba)
+            start_seg = math.ceil(min_mba / 2)
+            end_seg   = math.floor(min_mba / 2)
+            for i in range(max_mba - 1):
+                self.allowed_state_transitions.append(
+                    (self.crf_states["Mba1_" + str(i)], self.crf_states["Mba1_" + str(i + 1)]))
+                if i >= start_seg + 1 and i <= max_mba - end_seg:
+                    self.allowed_state_transitions.append(
+                        (self.crf_states["Mba1_" + str(start_seg - 1)], self.crf_states["Mba1_" + str(i)]))
+
         self.allowed_start_states = [
             self.crf_states["S0"],
             self.crf_states[">0"],
@@ -203,6 +273,9 @@ class SplitIOCRFwithTPConfig:
             self.crf_states["a_beta"],
             self.crf_states["b_beta"],
         ]
+        if extend_first_tm:
+            self.allowed_end_states.append(self.crf_states["a_alpha_post"])
+            self.allowed_end_states.append(self.crf_states["b_alpha_post"])
         self.use_start_end_transitions = use_start_end_transitions
 
 
@@ -221,6 +294,9 @@ class SplitIOCRFwithTPConfig:
             self.crf_states["a_beta"]: 0,
             self.crf_states["b_beta"]: 1,
         }
+        if extend_first_tm:
+            self.simplification_dict[self.crf_states["a_alpha_post"]] = 0
+            self.simplification_dict[self.crf_states["b_alpha_post"]] = 1
         self.simplification_dict.update({x:2 for x in self.signal_state_inds})
         self.simplification_dict.update({x:3 for x in self.helix_state_inds})
         self.simplification_dict.update({x:4 for x in self.beta_state_inds})
@@ -271,10 +347,13 @@ class SplitIOCRFwithTPConfig:
         else:
             labels_remapped = np.ones_like(labels) *-1 #use an impossible value instead of 0/1 so that we catch problems.
         
-        labels_remapped[labels==self.crf_states['a_alpha']] = self.label_to_int["a_alpha"] 
+        labels_remapped[labels==self.crf_states['a_alpha']] = self.label_to_int["a_alpha"]
         labels_remapped[labels==self.crf_states['b_alpha']] = self.label_to_int["b_alpha"]
         labels_remapped[labels==self.crf_states['a_beta']] = self.label_to_int["a_beta"]
         labels_remapped[labels==self.crf_states['b_beta']] = self.label_to_int["b_beta"]
+        if self.extend_first_tm:
+            labels_remapped[labels==self.crf_states['a_alpha_post']] = self.label_to_int["a_alpha"]
+            labels_remapped[labels==self.crf_states['b_alpha_post']] = self.label_to_int["b_alpha"]
 
 
         max_len = self.max_segment_lengths["S"] if self.max_segment_lengths["S"] != -1 else self.min_segment_lengths["S"]
@@ -284,6 +363,9 @@ class SplitIOCRFwithTPConfig:
 
         labels_remapped[(labels >= self.crf_states["Mab0"]) & (labels <= self.crf_states["Mab"+str(self.max_segment_lengths["Mab"]-1)])] = self.label_to_int["M"]
         labels_remapped[(labels >= self.crf_states["Mba0"]) & (labels <= self.crf_states["Mba"+str(self.max_segment_lengths["Mba"]-1)])] = self.label_to_int["M"]
+        if self.extend_first_tm:
+            labels_remapped[(labels >= self.crf_states["Mab1_0"]) & (labels <= self.crf_states["Mab1_"+str(self.max_segment_lengths["Mab"]-1)])] = self.label_to_int["M"]
+            labels_remapped[(labels >= self.crf_states["Mba1_0"]) & (labels <= self.crf_states["Mba1_"+str(self.max_segment_lengths["Mba"]-1)])] = self.label_to_int["M"]
         labels_remapped[(labels >= self.crf_states["Bab0"]) & (labels <= self.crf_states["Bab"+str(self.max_segment_lengths["Bab"]-1)])] = self.label_to_int["B"]
         labels_remapped[(labels >= self.crf_states["Bba0"]) & (labels <= self.crf_states["Bba"+str(self.max_segment_lengths["Bba"]-1)])] = self.label_to_int["B"]
         
@@ -344,6 +426,9 @@ class SplitIOCRFwithTPConfig:
         emissions_out[:,:, [1]] = emissions[:,:,1].unsqueeze(-1) # b_alpha
         emissions_out[:,:, [2]] = emissions[:,:,2].unsqueeze(-1) # a_beta
         emissions_out[:,:, [3]] = emissions[:,:,3].unsqueeze(-1) # b_beta
+        if self.extend_first_tm:
+            emissions_out[:,:, [self.crf_states["a_alpha_post"]]] = emissions[:,:,0].unsqueeze(-1) # a_alpha_post shares a_alpha emission
+            emissions_out[:,:, [self.crf_states["b_alpha_post"]]] = emissions[:,:,1].unsqueeze(-1) # b_alpha_post shares b_alpha emission
         emissions_out[:,:, self.signal_state_inds] = emissions[:,:,4].unsqueeze(-1)
         emissions_out[:,:, self.helix_state_inds] =  emissions[:,:,5].unsqueeze(-1)
         emissions_out[:,:, self.beta_state_inds] =  emissions[:,:,6].unsqueeze(-1)

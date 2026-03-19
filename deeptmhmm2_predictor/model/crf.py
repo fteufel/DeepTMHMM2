@@ -676,6 +676,63 @@ class CRF(nn.Module):
         else:
             return marginals
 
+    def sample_from_posterior(
+        self,
+        emissions: torch.FloatTensor,
+        mask: torch.ByteTensor,
+        n_samples: int = 100,
+    ) -> List[List[List[int]]]:
+        """Sample paths from the CRF posterior using forward filtering + backward sampling.
+
+        Args:
+            emissions: ``(batch_size, seq_length, num_tags)`` if batch_first, else ``(seq_length, batch_size, num_tags)``.
+            mask: corresponding mask tensor.
+            n_samples: number of independent posterior samples to draw per batch element.
+
+        Returns:
+            List of shape ``(n_samples, batch_size)`` where each element is a ``List[int]``
+            path of length ``seq_len`` (valid positions only).
+        """
+        if self.batch_first:
+            emissions = emissions.transpose(0, 1)
+            mask = mask.transpose(0, 1)
+
+        # alpha[t, b, j] = log p(o_{1:t}, s_t = j)  shape: (seq_length, batch_size, num_tags)
+        alpha = self._compute_log_alpha(emissions, mask, run_backwards=False)
+
+        seq_length, batch_size, num_tags = emissions.shape
+        seq_lens = mask.long().sum(dim=0)  # (batch_size,)
+
+        all_samples: List[List[List[int]]] = []
+
+        for _ in range(n_samples):
+            batch_paths: List[List[int]] = []
+
+            for b in range(batch_size):
+                T = seq_lens[b].item()
+
+                # --- sample last state ---
+                log_w = alpha[T - 1, b, :]  # (num_tags,)
+                if self.include_start_end_transitions:
+                    log_w = log_w + self.end_transitions
+                last_state = torch.distributions.Categorical(logits=log_w).sample().item()
+                path = [last_state]
+
+                # --- sample backwards ---
+                for t in range(T - 2, -1, -1):
+                    next_state = path[-1]
+                    # p(s_t = j | s_{t+1} = next_state) ∝ alpha[t, j] * A[j, next_state]
+                    log_w = alpha[t, b, :] + self.transitions[:, next_state]
+                    state = torch.distributions.Categorical(logits=log_w).sample().item()
+                    path.append(state)
+
+                path.reverse()
+                batch_paths.append(path)
+
+            all_samples.append(batch_paths)
+
+        return all_samples  # (n_samples, batch_size, seq_len)
+
     @staticmethod
     def _log_sum_exp(tensor: torch.Tensor, dim: int) -> torch.Tensor:
         # Find the max value along `dim`

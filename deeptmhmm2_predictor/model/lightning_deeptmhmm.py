@@ -25,13 +25,14 @@ class DeepTMLightning(L.LightningModule):
                  clf_loss_scale=1.0,
                  membrane_class_names: Dict[int, str | int] | None = None,
                  memtype_is_multilabel: bool = False,
+                 extend_first_tm: bool = False,
                  **kwargs,
                 ):
         super().__init__()
         self.save_hyperparameters()
         
         self.model = SP5DeepTMHMM(
-            embedding_size=embedding_dim, 
+            embedding_size=embedding_dim,
             lstm_hidden_size=hidden_dim,
             clf_hidden_size=clf_hidden_dim,
             num_membrane_classes=num_membrane_classes,
@@ -43,4 +44,5 @@ class DeepTMLightning(L.LightningModule):
             n_filters=n_filters,
             filter_size_in=filter_size_in,
             filter_size_out=filter_size_out,
+            extend_first_tm=extend_first_tm,
             )
