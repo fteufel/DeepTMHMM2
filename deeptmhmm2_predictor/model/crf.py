@@ -118,8 +118,7 @@ class CRF(nn.Module):
             self.do_transition_constraint()
 
     def do_transition_constraint(self):
-        # inf = torch.finfo(self.start_transitions.dtype).min
-        inf = torch.as_tensor(-100000000000000, dtype=self.transitions.dtype)
+        inf = torch.as_tensor(torch.finfo(self.transitions.dtype).min, dtype=self.transitions.dtype)
         inf_matrix = (
             torch.empty(self.transitions.shape).fill_(inf).to(self.transitions.device)
         )
@@ -625,12 +624,11 @@ class CRF(nn.Module):
             )  # (batch_size, num_tags, num_tags)
             # Sum over all possible current tags, but we're in log prob space, so a sum
             # becomes a log-sum-exp
-            score = self._log_sum_exp(score, dim=1)
+            score = torch.logsumexp(score, dim=1)
             # Set log_prob to the score if this timestep is valid (mask == 1), otherwise
             # copy the prior value
             log_prob.append(
-                score * mask[i].unsqueeze(1)
-                + log_prob[-1] * (1.0 - mask[i]).unsqueeze(1)
+                torch.where(mask[i].unsqueeze(1) == 1, score, log_prob[-1])
             )
 
         if run_backwards:
@@ -639,7 +637,8 @@ class CRF(nn.Module):
         return torch.stack(log_prob)
 
     def compute_marginal_probabilities(
-        self, emissions: torch.FloatTensor, mask: torch.ByteTensor, truncate: bool = False
+        self, emissions: torch.FloatTensor, mask: torch.ByteTensor, truncate: bool = False,
+        return_log: bool = False
     ) -> torch.FloatTensor:
         if self.batch_first:
             emissions = emissions.transpose(0, 1)
@@ -656,6 +655,14 @@ class CRF(nn.Module):
 
         if self.batch_first:
             prob = prob.transpose(0, 1)
+
+        if return_log:
+            if truncate:
+                if self.batch_first:
+                    return [prob[i, :mask[:, i].sum().int().item(), :] for i in range(prob.size(0))]
+                else:
+                    return [prob[:, i, :mask[:, i].sum().int().item()] for i in range(prob.size(1))]
+            return prob
 
         marginals = torch.exp(prob)
 
@@ -732,19 +739,6 @@ class CRF(nn.Module):
             all_samples.append(batch_paths)
 
         return all_samples  # (n_samples, batch_size, seq_len)
-
-    @staticmethod
-    def _log_sum_exp(tensor: torch.Tensor, dim: int) -> torch.Tensor:
-        # Find the max value along `dim`
-        offset, _ = tensor.max(dim)
-        # Make offset broadcastable
-        broadcast_offset = offset.unsqueeze(dim)
-        # Perform log-sum-exp safely
-        safe_log_sum_exp = torch.log(
-            torch.sum(torch.exp(tensor - broadcast_offset), dim)
-        )
-        # Add offset back
-        return offset + safe_log_sum_exp
 
     def _viterbi_decode_force_states(
         self,
@@ -1006,30 +1000,32 @@ class CRF(nn.Module):
 
     
     def posterior_viterbi(
-            self, marginals: torch.FloatTensor, mask: torch.ByteTensor = None
+            self, emissions: torch.FloatTensor, mask: torch.ByteTensor = None
         ) -> List[List[int]]:
         """
         Decode the best allowed posterior path using the Posterior-Viterbi algorithm.
-        
+
         Args:
-            marginals: (seq_length, batch_size, num_tags) posterior probabilities
-            mask: (seq_length, batch_size) indicates valid positions (1) vs padding (0)
-                
+            emissions: (batch_size, seq_length, num_tags) emission scores if batch_first,
+                else (seq_length, batch_size, num_tags)
+            mask: (batch_size, seq_length) or (seq_length, batch_size) depending on batch_first
+
         Returns:
             List of lists containing the best tag sequence for each batch item
         """
         if mask is None:
-            mask = marginals.new_ones(marginals.shape[:2], dtype=torch.uint8)
+            mask = emissions.new_ones(emissions.shape[:2], dtype=torch.uint8)
+
+        # Compute log-marginals directly (avoids exp then log with epsilon)
+        log_marginals = self.compute_marginal_probabilities(emissions, mask, return_log=True)
+
         # Handle batch_first format
         if self.batch_first:
-            marginals = marginals.transpose(0, 1)
+            log_marginals = log_marginals.transpose(0, 1)
             mask = mask.transpose(0, 1)
-            
+
         seq_length, batch_size = mask.shape
-        
-        # Take log of marginals for numerical stability
-        log_marginals = torch.log(marginals + 1e-10)
-        
+
         # Initialize with first position posteriors
         score = log_marginals[0]
         
