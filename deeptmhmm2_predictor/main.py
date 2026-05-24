@@ -14,6 +14,8 @@ from Bio import SeqIO
 from pathlib import Path
 from tqdm import tqdm
 from esm import pretrained
+from torch.amp import autocast
+from time import time
 
 from .constants import (
     MEMBRANE_TYPE_NAMES,
@@ -42,6 +44,8 @@ def main():
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu", help="Device to run on")
     parser.add_argument("--simplify-io", action="store_true", help="Use generic inside/outside labels instead of membrane-specific characters")
     parser.add_argument("--plot", action="store_true", help="Generate horizontal bar plots for each prediction")
+    parser.add_argument("--batch-size", type=int, default=96, help="Batch size for inference")
+    parser.add_argument("--max-length-diff", type=int, default=500, help="Maximum sequence length difference allowed within a batch")
     args = parser.parse_args()
 
     out_dir = Path(args.output_dir)
@@ -71,8 +75,20 @@ def main():
     esm_model, esm_alphabet = pretrained.load_model_and_alphabet('esm2_t33_650M_UR50D')
     esm_model.to(args.device).eval()
 
-    # 3. Process sequences
+    # 3. Process sequences - length-aware batching
     sequences = list(SeqIO.parse(args.fasta, "fasta"))
+    sorted_sequences = sorted(sequences, key=lambda r: len(r.seq))
+    batched_sorted_sequences = []
+    current_batch = []
+    for seq in sorted_sequences:
+        if current_batch and (len(seq.seq) - len(current_batch[-1].seq) > args.max_length_diff or len(current_batch) >= args.batch_size):
+            batched_sorted_sequences.append(current_batch)
+            current_batch = [seq]
+        else:
+            current_batch.append(seq)
+    if current_batch:
+        batched_sorted_sequences.append(current_batch)
+
     print(f"Processing {len(sequences)} sequences...")
     
     all_results = []
@@ -85,95 +101,161 @@ def main():
     gff3_file = open(gff3_path, "w")
     gff3_file.write("##gff-version 3\n")
     
+    start_time = time()
     with tqdm(total=len(sequences), desc="Predicting", unit="seq") as pbar:
-        for record in sequences:
-            seq_id = record.id
-            sequence = str(record.seq)
+        for batch in reversed(batched_sorted_sequences):
+
+            batch_embeddings = []
+            batch_masks = []
+            sequence_lengths = []
+
+            # prepare embeddings - one sequence at a time
+            device_type = "cuda" if "cuda" in args.device else "cpu"
+            for record in batch:
+                seq_id = record.id
+                sequence = str(record.seq)
             
-            # Generate ESM embedding
-            embedding = get_embedding(sequence, esm_model, esm_alphabet, args.device).unsqueeze(0)
-            mask = torch.ones(1, len(sequence), device=args.device)
+                # Generate ESM embedding (in FP32 - ESM is pretrained, not subject to mixed precision training)
+                embedding = get_embedding(sequence, esm_model, esm_alphabet, args.device).unsqueeze(0)
+                mask = torch.ones(1, len(sequence), device=args.device)
+                batch_embeddings.append(embedding)
+                batch_masks.append(mask)
+                sequence_lengths.append(len(sequence))
+
+            # put together batch tensors - pad to max len of batch
+            max_len = max(sequence_lengths)
+            padded_embeddings = []
+            padded_masks = []
+            for emb, msk in zip(batch_embeddings, batch_masks):
+                pad_len = max_len - emb.shape[1]
+                if pad_len > 0:
+                    padded_emb = torch.nn.functional.pad(emb, (0, 0, 0, pad_len))
+                    padded_msk = torch.nn.functional.pad(msk, (0, pad_len))
+                else:
+                    padded_emb = emb
+                    padded_msk = msk
+                padded_embeddings.append(padded_emb)
+                padded_masks.append(padded_msk)
             
-            # Run inference across all ensemble members
+            # Batch inference
+            batch_embeddings = torch.cat(padded_embeddings, dim=0)
+            batch_masks = torch.cat(padded_masks, dim=0)
+
             all_topo, all_mem_probs, all_marginals = [], [], []
-            for i in range(len(models.topology_models)):
-                t, m_p, marg, _ = models.predict_single_model(i, embedding, mask, compute_marginals=args.plot)
-                all_topo.append(t)
-                all_mem_probs.append(m_p)
-                all_marginals.append(marg)
+            with autocast(device_type):
+                for i in range(len(models.topology_models)):
+                    t, m_p, marg, _ = models.predict_single_model(i, batch_embeddings, batch_masks)
+                    all_topo.append(t)
+                    all_mem_probs.append(m_p)
+                    all_marginals.append(marg)
+
+            # Unbatch results by removing padding positions
+            unbatched_topo = []
+            unbatched_mem_probs = []
+            unbatched_marginals = []
+            for batch_idx, seq_len in enumerate(sequence_lengths):
+                unbatched_topo.append([t[batch_idx][:seq_len] for t in all_topo])
+                unbatched_mem_probs.append([m[batch_idx] for m in all_mem_probs])
+                # Marginals are already per-sequence dicts from simplify_marginals, just extract by index
+                unbatched_marginals.append([marg_list[batch_idx] for marg_list in all_marginals])
+
+
 
 
             ## 
             ## Output postprocessing
             ##
             
-            # Aggregate via agreement-based voting and thresholding
-            final_topo_ab, final_marginals_ab = aggregate_topology_predictions(all_topo, all_marginals)
-            pred_mem_indices, mem_probs = aggregate_memtype_predictions(all_mem_probs)
-            final_topo_ab = suppress_implausible_predictions(final_topo_ab)
+            # Process each sequence in the batch
+            for batch_idx, record in enumerate(batch):
+                seq_id = record.id
+                sequence = str(record.seq)
+                
+                # Get predictions for this sequence (without padding)
+                all_topo_seq = unbatched_topo[batch_idx]
+                all_mem_probs_seq = unbatched_mem_probs[batch_idx]
+                all_marginals_seq = unbatched_marginals[batch_idx]
+
+                # Aggregate via agreement-based voting and thresholding
+                final_topo_ab, final_marginals_ab = aggregate_topology_predictions(all_topo_seq, all_marginals_seq)
+                pred_mem_indices, mem_probs = aggregate_memtype_predictions(all_mem_probs_seq)
+                final_topo_ab = suppress_implausible_predictions(final_topo_ab)
 
 
-            # Select main membrane type from predicted indices (highest probability among valid predictions)
-            main_mem_idx = max(pred_mem_indices, key=lambda i: mem_probs[i])
-            # infer predicted protein type
-            type_code = infer_structural_type(final_topo_ab)
-            
-            # if we don't work in simplified I-O topo, need to map to actual sides
-            final_topo_out = translate_ab_topology(final_topo_ab, main_mem_idx, args.simplify_io)
-            
-            # The technical regions with biological names (renamed segments)
-            named_regions = get_named_regions(
-                final_topo_ab, 
-                main_mem_idx, 
-                args.simplify_io if type_code not in ["I", "S", "T"] else True # always simplify for non-TM proteins
-                )
-            
-            # Information mapping for headers
-            type = DISPLAY_PROT_TYPE_MAPPING[type_code]
-            predicted_mem_names = [MEMBRANE_TYPE_NAMES[idx] for idx in pred_mem_indices]
-            mem_names_str = "; ".join(predicted_mem_names)
+                # Select main membrane type from predicted indices (highest probability among valid predictions)
+                main_mem_idx = max(pred_mem_indices, key=lambda i: mem_probs[i])
+                # infer predicted protein type
+                type_code = infer_structural_type(final_topo_ab)
+                
+                # if we don't work in simplified I-O topo, need to map to actual sides
+                final_topo_out = translate_ab_topology(final_topo_ab, main_mem_idx, args.simplify_io)
+                
+                # The technical regions with biological names (renamed segments)
+                named_regions = get_named_regions(
+                    final_topo_ab, 
+                    main_mem_idx, 
+                    args.simplify_io if type_code not in ["I", "S", "T"] else True # always simplify for non-TM proteins
+                    )
+                
+                # Information mapping for headers
+                type = DISPLAY_PROT_TYPE_MAPPING[type_code]
+                predicted_mem_names = [MEMBRANE_TYPE_NAMES[idx] for idx in pred_mem_indices]
+                mem_names_str = "; ".join(predicted_mem_names)
 
-            # no membrane type for non-TM proteins.
-            if type_code in ["I", "S", "T"]:
-                predicted_mem_names = []
-                mem_names_str = ""
-                mem_probs = np.zeros_like(mem_probs)
-                final_topo_out = final_topo_ab.replace("a", "I").replace("b", "O")
+                # no membrane type for non-TM proteins.
+                if type_code in ["I", "S", "T"]:
+                    predicted_mem_names = []
+                    mem_names_str = ""
+                    mem_probs = np.zeros_like(mem_probs)
+                    final_topo_out = final_topo_ab.replace("a", "I").replace("b", "O")
 
-            # The full info for this sample - json format.
-            sample_record = {
-                "id": seq_id,
-                "type": type,
-                "membrane_types": predicted_mem_names,
-                "membrane_types_probabilities": mem_probs.round(2).tolist(),
-                "topology_string": final_topo_out,
-                "segments": named_regions,
-            }
+                # The full info for this sample - json format.
+                sample_record = {
+                    "id": seq_id,
+                    "type": type,
+                    "membrane_types": predicted_mem_names,
+                    "membrane_types_probabilities": mem_probs.round(2).tolist(),
+                    "topology_string": final_topo_out,
+                    "segments": named_regions,
+                }
 
-            ##
-            ## Append to output files and plot
-            ##
+                ##
+                ## Append to output files and plot
+                ##
 
-            # 5. Save/Write results
-            three_line_file.write(f">{seq_id} | {type} | {mem_names_str}\n{sequence}\n{final_topo_out}\n")
-            gff3_file.write(gff3_format(seq_id, len(sequence), named_regions))
-            
-            if args.plot:
-                # Use the descriptive type string as title
-                plot_prediction(seq_id, sequence, final_topo_ab, mem_names_str, final_marginals_ab, out_dir)
-            
-            all_results.append(sample_record)
-            
-            # Prepping tabular data
-            row = {"id": seq_id}
-            for idx, name in MEMBRANE_TYPE_NAMES.items():
-                row[name] = mem_probs.round(2)[idx]
-            memtype_table_data.append(row)
-            
-            pbar.update(1)
+                # 5. Save/Write results
+                three_line_file.write(f">{seq_id} | {type} | {mem_names_str}\n{sequence}\n{final_topo_out}\n")
+                gff3_file.write(gff3_format(seq_id, len(sequence), named_regions))
+                
+                if args.plot:
+                    # Use the descriptive type string as title
+                    plot_prediction(seq_id, sequence, final_topo_ab, mem_names_str, final_marginals_ab, out_dir)
+                
+                all_results.append(sample_record)
+                
+                # Prepping tabular data
+                row = {"id": seq_id}
+                for idx, name in MEMBRANE_TYPE_NAMES.items():
+                    row[name] = mem_probs.round(2)[idx]
+                memtype_table_data.append(row)
+                
+                pbar.update(1)
 
     three_line_file.close()
     gff3_file.close()
+
+    end_time = time()
+    elapsed_time = end_time - start_time
+    if len(sequences) > 0:
+        all_results.append({
+            "metadata": {
+                "start_time": start_time,
+                "end_time": end_time,
+                "total_time_seconds": elapsed_time,
+                "num_sequences": len(sequences),
+                "average_time_per_sequence": elapsed_time / len(sequences)
+            }
+        })
 
     # Save final files
     with open(out_dir / "predictions.json", "w") as f:
