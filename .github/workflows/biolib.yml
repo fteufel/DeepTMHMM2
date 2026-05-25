@@ -1,0 +1,23 @@
+name: BioLib Build & Push
+on: push
+concurrency:
+  group: ${{ github.repository }}
+  cancel-in-progress: false
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pybiolib
+        run: pip install pybiolib
+      - name: Build
+        run: docker build -t deeptmhmm2:latest .
+      - name: Push
+        run: |
+          if [ "$GITHUB_REF_NAME" == "main" ]; then
+            biolib push DTU/DeepTMHMM2
+          else
+            biolib push --dev DTU/DeepTMHMM2:latest-dev
+          fi
+        env:
+          BIOLIB_TOKEN: ${{ secrets.BIOLIB_TOKEN }}

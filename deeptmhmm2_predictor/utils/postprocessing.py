@@ -165,7 +165,7 @@ def aggregate_topology_predictions(
 def aggregate_memtype_predictions(all_memtype_probs: List[torch.Tensor]) -> Tuple[List[int], torch.Tensor]:
     """Averaging and thresholding for multi-label membrane type predictions."""
     avg_probs = torch.stack(all_memtype_probs).mean(dim=0)
-    probs_np = avg_probs.cpu().numpy().squeeze()
+    probs_np = avg_probs.detach().to(torch.float32).cpu().numpy().squeeze()
     
     all_predicted_indices = []
     supported_probs = {}
