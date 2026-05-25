@@ -1,0 +1,23 @@
+biolib_version: 2
+
+modules:
+  main:
+    image: "local-docker://deeptmhmm2:latest"
+    command: "dtm2"
+    working_directory: /home/biolib/
+    input_files:
+      - COPY / /home/biolib/
+    output_files:
+      - COPY /home/biolib/output/ /
+
+main_output_file: "/output/output.txt"
+arguments:
+  - key: ""
+    description: "Input protein sequences"
+    type: sequence
+    required: true
+  - key: ""
+    default_value: "output"
+    description: "output dir"
+    type: hidden
+    required: false

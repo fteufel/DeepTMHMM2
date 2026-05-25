@@ -157,7 +157,7 @@ def main():
                 unbatched_topo.append([t[batch_idx][:seq_len] for t in all_topo])
                 unbatched_mem_probs.append([m[batch_idx] for m in all_mem_probs])
                 # Marginals are already per-sequence dicts from simplify_marginals, just extract by index
-                unbatched_marginals.append([marg_list[batch_idx] for marg_list in all_marginals])
+                unbatched_marginals.append([marg_list[batch_idx] if marg_list else None for marg_list in all_marginals])
 
 
 
