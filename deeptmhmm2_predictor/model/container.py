@@ -48,9 +48,11 @@ class ModelContainer:
             
             for batch_idx in range(batch_size):
                 topology_str = top_model.crf_config.get_string_from_labels(simple_paths[batch_idx])
-                simplified_marginals = top_model.crf_config.simplify_marginals(marginals[batch_idx])
+                if marginals is not None:
+                    simplified_marginals = top_model.crf_config.simplify_marginals(marginals[batch_idx])
+                    simplified_marginals_list.append(simplified_marginals)
+                
                 topology_strs.append(topology_str)
-                simplified_marginals_list.append(simplified_marginals)
             
             mem_type_probs = mem_model(embedding, mask)
             

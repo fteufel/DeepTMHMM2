@@ -142,7 +142,6 @@ class SP5DeepTMHMM(nn.Module):
         packed_embeddings = nn.utils.rnn.pack_padded_sequence(x, mask.sum(dim=1).cpu(), batch_first=True, enforce_sorted=False)
         bi_lstm_out_packed, _ = self.bi_lstm(packed_embeddings)
         bi_lstm_out, _ = nn.utils.rnn.pad_packed_sequence(bi_lstm_out_packed, batch_first=True)
-        x = nn.functional.relu(self.conv2(bi_lstm_out.permute(0, 2, 1))).permute(0, 2, 1)
 
         bi_lstm_out = self.conv2_dropout(bi_lstm_out)
         emissions = self.hidden_to_labels(bi_lstm_out)
