@@ -34,16 +34,24 @@ class ModelContainer:
             model.to(device)
         return self
 
-    def predict_single_model(self, model_idx: int, embedding: torch.Tensor, mask: torch.Tensor, compute_marginals: bool=False) -> Tuple[str, torch.Tensor, dict, float]:
+    def predict_single_model(self, model_idx: int, embedding: torch.Tensor, mask: torch.Tensor, compute_marginals: bool=False) -> Tuple[List[str], torch.Tensor, List[dict], float]:
         with torch.no_grad():
             top_model = self.topology_models[model_idx]
             mem_model = self.memtype_models[model_idx]
 
             (simple_paths, marginals) = top_model(embedding, mask, compute_marginals=compute_marginals)
-            topology_str = top_model.crf_config.get_string_from_labels(simple_paths[0])
             
-            simplified_marginals = top_model.crf_config.simplify_marginals(marginals[0]) if marginals is not None else None
+            # Handle batch - process all batch elements
+            batch_size = embedding.shape[0]
+            topology_strs = []
+            simplified_marginals_list = []
+            
+            for batch_idx in range(batch_size):
+                topology_str = top_model.crf_config.get_string_from_labels(simple_paths[batch_idx])
+                simplified_marginals = top_model.crf_config.simplify_marginals(marginals[batch_idx])
+                topology_strs.append(topology_str)
+                simplified_marginals_list.append(simplified_marginals)
             
             mem_type_probs = mem_model(embedding, mask)
             
-        return topology_str, mem_type_probs, simplified_marginals, 0.0
+        return topology_strs, mem_type_probs, simplified_marginals_list, 0.0

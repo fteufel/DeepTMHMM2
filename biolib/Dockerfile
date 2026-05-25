@@ -11,6 +11,7 @@ COPY deeptmhmm2_predictor deeptmhmm2_predictor
 RUN pip install --no-cache-dir --retries 20 --timeout 300 --break-system-packages .
 
 COPY sample.fasta sample.fasta
+COPY biolib/README.md README.md
 RUN dtm2 --model-dir checkpoints sample.fasta results
 
 RUN mkdir output
