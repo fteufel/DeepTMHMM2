@@ -5,6 +5,7 @@ modules:
     image: "local-docker://deeptmhmm2:latest"
     command: "dtm2 --model-dir checkpoints"
     working_directory: /home/biolib/
+    default_machine: "gpu.small"
     input_files:
       - COPY / /home/biolib/
     output_files:

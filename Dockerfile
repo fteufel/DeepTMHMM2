@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM python:3.14-slim
+FROM nvidia/cuda:12.9.2-runtime-ubuntu24.04
 WORKDIR /home/biolib/
 
 COPY checkpoints checkpoints
