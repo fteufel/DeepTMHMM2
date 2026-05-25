@@ -11,7 +11,7 @@ modules:
     output_files:
       - COPY /home/biolib/output/ /
 
-main_output_file: "/output/output.txt"
+main_output_file: "/TMRs.gff3"
 arguments:
   - key: ""
     description: "Enter one or more proteins:"
