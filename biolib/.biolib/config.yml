@@ -12,7 +12,7 @@ modules:
       - COPY /home/biolib/results/ /
       - COPY /home/biolib/output.md /
 
-main_output_file: "output.md"
+main_output_file: "/output.md"
 arguments:
   - key: ""
     description: "Enter one or more proteins:"
