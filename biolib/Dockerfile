@@ -17,6 +17,7 @@ COPY biolib/README.md README.md
 COPY biolib/make_report.py make_report.py
 COPY biolib/run.sh run.sh
 RUN chmod +x run.sh
+RUN ./run.sh sample.fasta results
 
 RUN mkdir output
 
