@@ -3,23 +3,40 @@ biolib_version: 2
 modules:
   main:
     image: "local-docker://deeptmhmm2:latest"
-    command: "dtm2 --model-dir checkpoints"
+    command: "/home/biolib/run.sh"
     working_directory: /home/biolib/
     default_machine: "gpu.small"
     input_files:
       - COPY / /home/biolib/
     output_files:
-      - COPY /home/biolib/output/ /
+      - COPY /home/biolib/results/ /
+      - COPY /home/biolib/output.md /
 
-main_output_file: "/TMRs.gff3"
+main_output_file: "output.md"
 arguments:
   - key: ""
     description: "Enter one or more proteins:"
     type: sequence
     required: true
     default_value: "sample.fasta"
+  - key: "--plot"
+    description: "Generate visualization plots"
+    type: toggle
+    options:
+      "on": "--plot"
+      "off": ""
+    required: false
+  - key: "--simplify-io"
+    description: "Use simplified I/O labels"
+    type: toggle
+    options:
+      "on": "--simplify-io"
+      "off": ""
+    required: false
   - key: ""
-    default_value: "output"
+    default_value: "results"
     description: "output dir"
     type: hidden
     required: false
+
+
