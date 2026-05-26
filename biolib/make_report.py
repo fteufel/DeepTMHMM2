@@ -1,39 +1,91 @@
 import json
-import pandas as pd
 import os
-import glob
+import sys
 from tabulate import tabulate
 
+# ---------------------------------------------------------------------------
 # Load predictions
+# ---------------------------------------------------------------------------
 try:
     with open("results/predictions.json", "r") as f:
         results = json.load(f)
 except FileNotFoundError:
-    results = {}
+    print("ERROR: results/predictions.json not found.")
+    sys.exit(1)
 
-output_md = "# DeepTMHMM2 - Results\n\n"
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
-if not results:
+def is_prediction(entry: dict) -> bool:
+    """Return True if this entry is a real prediction (has an 'id' field)."""
+    return "id" in entry
+
+
+def render_entry(entry: dict) -> str:
+    """Render a single prediction entry as a Markdown block."""
+    lines = []
+
+    seq_id   = entry["id"]
+    prot_type = entry["type"]
+
+    # --- Header ---
+    lines.append(f"## {seq_id} | {prot_type}")
+    lines.append("")
+
+    # --- Membrane types (only for non-globular) ---
+    if prot_type.lower() != "globular":
+        mem_types = entry.get("membrane_types", [])
+        if mem_types:
+            lines.append(f"**Membrane type(s):** {', '.join(mem_types)}")
+        else:
+            lines.append("**Membrane type(s):** —")
+        lines.append("")
+
+    # --- Embedded figure ---
+    figure_path = f"{seq_id}_plot.png"       # relative path for Markdown
+    figure_abs  = os.path.join("results", figure_path)
+    if os.path.exists(figure_abs):
+        lines.append(f"![Topology plot for {seq_id}]({figure_path})")
+    else:
+        lines.append(f"*No figure found for `{seq_id}`.*")
+    lines.append("")
+
+    # --- Segments table ---
+    segments = entry.get("segments", [])
+    if segments:
+        rows = [[seg[0], seg[1], seg[2], seg[2] - seg[1] + 1] for seg in segments]
+        table = tabulate(
+            rows,
+            headers=["Region", "Start", "End", "Length"],
+            tablefmt="github",
+        )
+        lines.append("**Segments:**")
+        lines.append("")
+        lines.append(table)
+    else:
+        lines.append("**Segments:** —")
+
+    lines.append("")
+    lines.append("---")
+    lines.append("")
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Build report
+# ---------------------------------------------------------------------------
+output_md = "# DeepTMHMM 2 — Predictions\n\n"
+
+predictions = [e for e in results if is_prediction(e)]
+
+if not predictions:
     output_md += "No predictions available.\n"
 else:
-    output_md += "## Summary\n\n"
-    if isinstance(results, list):
-        df = pd.DataFrame(results)
-        # Select key columns for display
-        cols = ['id', 'type', 'membrane_type', 'topology']
-        available_cols = [c for c in cols if c in df.columns]
-        output_md += tabulate(df[available_cols], tablefmt="github", headers="keys")
-        output_md += "\n\n"
-        
-        # Display plots
-        output_md += "## Visualizations\n\n"
-        plot_files = glob.glob("results/*_plot.png")
-        for plot in plot_files:
-            plot_name = os.path.basename(plot)
-            output_md += f"### {plot_name}\n"
-            output_md += f"![{plot_name}]({plot_name})\n\n"
-    else:
-        output_md += str(results)
+    for entry in predictions:
+        output_md += render_entry(entry)
 
 with open("output.md", "w") as f:
     f.write(output_md)
+
+print(f"Report written to output.md ({len(predictions)} prediction(s)).")

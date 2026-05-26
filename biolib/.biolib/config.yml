@@ -22,6 +22,7 @@ arguments:
   - key: "--plot"
     description: "Generate plots"
     type: toggle
+    default_value: "--plot"
     options:
       "on": "--plot"
       "off": ""
@@ -29,9 +30,14 @@ arguments:
   - key: "--simplify-io"
     description: "Use simplified inside/outside labels"
     type: toggle
-    default_value: "--simplify-io"
     options:
       "on": "--simplify-io"
+      "off": ""
+  - key: "--marginals"
+    description: "Compute marginals for each prediction"
+    type: toggle
+    options:
+      "on": "--marginals"
       "off": ""
     required: false
   - key: ""

@@ -48,8 +48,14 @@ def plot_prediction(seq_id: str,
     output_dir : Path
         Directory to save the plot.
     """
-    plt.figure(figsize=(12, 8))
-    gs = gridspec.GridSpec(2, 1, height_ratios=[1, 4])
+    
+    if agg_probs:
+        plt.figure(figsize=(12, 8))
+        gs = gridspec.GridSpec(2, 1, height_ratios=[1, 4])
+    else:
+        plt.figure(figsize=(12, 1.6))
+        gs = gridspec.GridSpec(1, 1)
+
     x_range = np.arange(len(sequence))
 
     # Track 1: Predicted Topology (Compartment plot)
@@ -118,12 +124,14 @@ def plot_prediction(seq_id: str,
         ax0.set_yticks([0, 2], ['Inside', 'Outside'])
 
     ax0.set_xlim(0, len(sequence))
-    ax0.set_title(f"DeepTM: {seq_id} | Type: {prot_type_str} | {mem_type_name}", fontsize=14, fontweight='bold')
-    
-    # Track 2: Posterior Probabilities (Continuous lines)
-    ax1 = plt.subplot(gs[1])
+    if mem_type_name == "":
+        ax0.set_title(f"DeepTM: {seq_id} | Type: {prot_type_str}", fontsize=14, fontweight='bold')
+    else:
+        ax0.set_title(f"DeepTM: {seq_id} | Type: {prot_type_str} | {mem_type_name}", fontsize=14, fontweight='bold')
     
     if agg_probs:
+        # Track 2: Posterior Probabilities (Continuous lines)
+        ax1 = plt.subplot(gs[1])
         cat_meta = {
             0: {'label': 'Inside/Outside', 'color': COLORS['inside']},
             2: {'label': 'Signal Peptide', 'color': COLORS['signal']},
@@ -142,12 +150,10 @@ def plot_prediction(seq_id: str,
         ax1.set_ylim(-0.05, 1.05)
         ax1.set_ylabel("Posterior Probability", fontsize=12)
         ax1.legend(loc='upper right', frameon=True, shadow=False)
-    else:
-        ax1.text(0.5, 0.5, "Probability data not provided", ha='center', va='center')
 
-    ax1.set_xlim(0, len(sequence))
-    ax1.set_xlabel("Amino Acid Position", fontsize=12)
-    ax1.grid(alpha=0.3)
+        ax1.set_xlim(0, len(sequence))
+        ax1.set_xlabel("Amino Acid Position", fontsize=12)
+        ax1.grid(alpha=0.3)
     
     plt.tight_layout()
     plt.savefig(output_dir / f"{seq_id}_plot.png", dpi=200)

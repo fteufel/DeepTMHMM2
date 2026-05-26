@@ -43,7 +43,8 @@ def main():
     parser.add_argument("--model-dir", default=None, help="Directory containing model checkpoints (optional)")
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu", help="Device to run on")
     parser.add_argument("--simplify-io", action="store_true", help="Use generic inside/outside labels instead of membrane-specific characters")
-    parser.add_argument("--plot", action="store_true", help="Generate horizontal bar plots for each prediction")
+    parser.add_argument("--plot", action="store_true", help="Generate plots for each prediction")
+    parser.add_argument("--marginals", action="store_true", help="Compute marginals for each prediction")
     parser.add_argument("--batch-size", type=int, default=96, help="Batch size for inference")
     parser.add_argument("--max-length-diff", type=int, default=500, help="Maximum sequence length difference allowed within a batch")
     args = parser.parse_args()
@@ -144,7 +145,7 @@ def main():
             all_topo, all_mem_probs, all_marginals = [], [], []
             with autocast(device_type):
                 for i in range(len(models.topology_models)):
-                    t, m_p, marg, _ = models.predict_single_model(i, batch_embeddings, batch_masks)
+                    t, m_p, marg, _ = models.predict_single_model(i, batch_embeddings, batch_masks, compute_marginals=args.marginals)
                     all_topo.append(t)
                     all_mem_probs.append(m_p)
                     all_marginals.append(marg)
