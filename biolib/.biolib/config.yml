@@ -33,8 +33,9 @@ arguments:
     options:
       "on": "--simplify-io"
       "off": ""
+    required: false
   - key: "--marginals"
-    description: "Compute marginals for each prediction"
+    description: "Compute marginal probabilities"
     type: toggle
     options:
       "on": "--marginals"

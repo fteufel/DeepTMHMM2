@@ -230,7 +230,8 @@ def main():
                 
                 if args.plot:
                     # Use the descriptive type string as title
-                    plot_prediction(seq_id, sequence, final_topo_ab, mem_names_str, final_marginals_ab, out_dir)
+                    plot_prediction(seq_id, sequence, final_topo_ab, mem_names_str, final_marginals_ab, out_dir,
+                                    main_mem_idx=main_mem_idx, simplify_io=args.simplify_io)
                 
                 all_results.append(sample_record)
                 

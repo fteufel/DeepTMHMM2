@@ -49,7 +49,8 @@ class ModelContainer:
             for batch_idx in range(batch_size):
                 topology_str = top_model.crf_config.get_string_from_labels(simple_paths[batch_idx])
                 if marginals is not None:
-                    simplified_marginals = top_model.crf_config.simplify_marginals(marginals[batch_idx])
+                    idx_marginals = marginals[batch_idx, :mask[batch_idx].sum().int().item()]
+                    simplified_marginals = top_model.crf_config.simplify_marginals(idx_marginals)
                     simplified_marginals_list.append(simplified_marginals)
                 
                 topology_strs.append(topology_str)

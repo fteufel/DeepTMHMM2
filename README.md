@@ -2,12 +2,6 @@
 
 DeepTMHMM 2 is a transmembrane protein topology and membrane type predictor.
 
-## TODO before release
-- Clean up and fully document output types
-- Make visualization less 2010s
-- run test set with all memtypes and protein cases
-- Check with biolib for compatibility reqs
-
 
 ## Features
 - **Protein Type**: Predicts the type of protein (e.g., globular, alpha TM, beta barrel).
@@ -42,6 +36,7 @@ Argument | Type  | Description |
 `--model-dir` | `str`  |Directory containing the `.ckpt` files. Must contain exactly 5 `topology_*.ckpt` and 5 `memtype_*.ckpt` files, otherwise the tool will abort. If not provided, defaults to the cache, downloading if necessary. |
 `--simplify-io` | Flag  | Use generic `I/O` (inside/outside) labels instead of membrane-specific characters. |
 `--plot` | Flag  | Generate horizontal bar plots and posterior probability tracks for each prediction. |
+`--marginals` | Flag | Compute marginal probabilities for each residue. |
 `--batch-size` | `int` | (Optional, performance) Maximum number of sequences to process simultaneously (default: 96). |
 `--max-length-diff` | `int` | (Optional, performance) Maximum residue length difference between the shortest and longest sequence in a single batch. We start a new batch when the length difference between the current sequence and the previous one exceeds this value to avoid excessive padding processing. (default: 500). |
 `--device` | `str`  | (Optional, performance) Device to run inference on (defaults to `cuda` if available, else `cpu`). Do not use `mps` on Apple Silicon, as we have observed numerical inconsistencies in the ESM2 language model embedding that lead to wrong predictions. |

@@ -10,6 +10,8 @@ from itertools import groupby
 from pathlib import Path
 from typing import Dict, Optional
 
+from ..constants import MEMBRANE_REGION_NAMES
+
 COLORS = {
     'inside': '#377eb8',
     'outside': '#f781bf',
@@ -29,7 +31,9 @@ def plot_prediction(seq_id: str,
                     topology: str, 
                     mem_type_name: str, 
                     agg_probs: Optional[Dict[int, np.ndarray]], 
-                    output_dir: Path):
+                    output_dir: Path,
+                    main_mem_idx: Optional[int] = None,
+                    simplify_io: bool = False):
     """
     Generates a visual plot of the predicted topology and posterior probabilities.
     
@@ -47,6 +51,11 @@ def plot_prediction(seq_id: str,
         Aggregated marginal probabilities for categories (0: I/O, 2: Signal, 3: Alpha, etc.).
     output_dir : Path
         Directory to save the plot.
+    main_mem_idx : int, optional
+        Index into MEMBRANE_REGION_NAMES for the primary predicted membrane type.
+        Used to label the y-axis with biologically accurate compartment names.
+    simplify_io : bool
+        If True, use generic 'Inside'/'Outside' labels regardless of membrane type.
     """
     
     if agg_probs:
@@ -110,24 +119,36 @@ def plot_prediction(seq_id: str,
     ax0.set_ylim(-0.5, 2.5)
 
     is_transit = topology.startswith('>')
-    sp_label = "Transit" if is_transit else "Signal"
+    sp_label = "TP" if is_transit else "SP"
+
+    # Resolve side labels: use biological compartment names when available and not simplified
+    is_tm_type = "TM" in prot_type_str or "BETA" in prot_type_str
+    if (not simplify_io
+            and is_tm_type
+            and main_mem_idx is not None
+            and main_mem_idx in MEMBRANE_REGION_NAMES):
+        region = MEMBRANE_REGION_NAMES[main_mem_idx]
+        side_a = region['a']   # topological 'inside' (a-state)
+        side_b = region['b']   # topological 'outside' (b-state)
+    else:
+        side_a, side_b = 'Inside', 'Outside'
 
     if "BETA" in prot_type_str:
-        ax0.set_yticks([0, 1, 2], ['Inside', 'Beta Barrel', 'Outside'])
+        ax0.set_yticks([0, 1, 2], [side_a, f'{sp_label}/Membrane', side_b])
     elif "SP" in prot_type_str and "TM" in prot_type_str:
-        ax0.set_yticks([0, 1, 2], ['Inside', f'{sp_label}/TM', 'Outside'])
+        ax0.set_yticks([0, 1, 2], [side_a, f'{sp_label}/Membrane', side_b])
     elif "SP" in prot_type_str:
-        ax0.set_yticks([0, 1, 2], ['Inside', sp_label, 'Outside'])
+        ax0.set_yticks([0, 1, 2], [side_a, sp_label, side_b])
     elif "TM" in prot_type_str:
-         ax0.set_yticks([0, 1, 2], ['Inside', 'TM', 'Outside'])
+        ax0.set_yticks([0, 1, 2], [side_a, 'Membrane', side_b])
     else:
         ax0.set_yticks([0, 2], ['Inside', 'Outside'])
 
     ax0.set_xlim(0, len(sequence))
     if mem_type_name == "":
-        ax0.set_title(f"DeepTM: {seq_id} | Type: {prot_type_str}", fontsize=14, fontweight='bold')
+        ax0.set_title(f"{seq_id} | Type: {prot_type_str}", fontsize=14, fontweight='bold')
     else:
-        ax0.set_title(f"DeepTM: {seq_id} | Type: {prot_type_str} | {mem_type_name}", fontsize=14, fontweight='bold')
+        ax0.set_title(f"{seq_id} | Type: {prot_type_str} | {mem_type_name}", fontsize=14, fontweight='bold')
     
     if agg_probs:
         # Track 2: Posterior Probabilities (Continuous lines)
@@ -137,10 +158,15 @@ def plot_prediction(seq_id: str,
             2: {'label': 'Signal Peptide', 'color': COLORS['signal']},
             3: {'label': 'Beta Barrel', 'color': COLORS['beta']},
             4: {'label': 'Alpha TM', 'color': COLORS['alpha']},
+        }
+
+        alpha_only = {
             5: {'label': 'Reentrant', 'color': COLORS['reentrant']},
             6: {'label': 'Interfacial', 'color': COLORS['interfacial']}, 
             7: {'label': 'Transit Peptide', 'color': COLORS['transit']}
         }
+        if not "BETA" in prot_type_str:
+            cat_meta.update(alpha_only)
         
         for cat_idx, probs in agg_probs.items():
             if cat_idx in cat_meta:
