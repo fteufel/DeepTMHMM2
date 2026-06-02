@@ -34,7 +34,7 @@ def render_entry(entry: dict) -> str:
     lines.append("")
 
     # --- Membrane types (only for non-globular) ---
-    if prot_type.lower() != "globular":
+    if not prot_type.lower().startswith("globular"):
         mem_types = entry.get("membrane_types", [])
         if mem_types:
             lines.append(f"**Membrane type(s):** {', '.join(mem_types)}")
@@ -42,14 +42,14 @@ def render_entry(entry: dict) -> str:
             lines.append("**Membrane type(s):** —")
         lines.append("")
 
-    # --- Embedded figure ---
+    # --- Embedded figure + per-entry download ---
     figure_path = f"{seq_id}_plot.png"       # relative path for Markdown
     figure_abs  = os.path.join("results", figure_path)
     if os.path.exists(figure_abs):
+        lines.append(f"**Download:** [PNG]({figure_path})")
+        lines.append("")
         lines.append(f"![Topology plot for {seq_id}]({figure_path})")
-    else:
-        lines.append(f"*No figure found for `{seq_id}`.*")
-    lines.append("")
+        lines.append("")
 
     # --- Segments table ---
     segments = entry.get("segments", [])
@@ -76,6 +76,13 @@ def render_entry(entry: dict) -> str:
 # Build report
 # ---------------------------------------------------------------------------
 output_md = "# DeepTMHMM 2 — Predictions\n\n"
+
+output_md += "### Downloads\n\n"
+output_md += "[JSON summary](predictions.json) / "
+output_md += "[Topology strings](predicted_topologies.3line) / "
+output_md += "[GFF3](TMRs.gff3) / "
+output_md += "[Membrane type probabilities](membrane_types.tsv)\n\n"
+output_md += "---\n\n"
 
 predictions = [e for e in results if is_prediction(e)]
 
