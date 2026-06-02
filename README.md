@@ -57,8 +57,9 @@ DeepTMHMM 2 processes the input sequences after sorting by length for improved b
 The `predictions.json` file contains an array of objects for each sequence:
 - **`id`**: Sequence identifier from the FASTA header.
 - **`type`**: Simplified structural classification (e.g., `Alpha TM`, `Beta Barrel`, `Globular + SP`).
-- **`membrane_type`**: Human-readable name of the predicted membrane environment.
-- **`topology`**: Predicted topology string (translated or simplified).
+- **`membrane_types`**: List of human-readable names of the predicted membrane environment(s).
+- **`topology_string`**: Predicted topology string (translated or simplified).
+- **`segments`**: List of predicted segments, each with `name`, `start`, and `end` fields.
 
 ### Inside and outside definitions
 
@@ -104,7 +105,7 @@ preds = model.predict(data)
 preds.to_json('predictions.json')
 preds.to_3line('predicted_topologies.3line')
 preds.to_gff3('TMRs.gff3')
-preds.to_memtype_csv('membrane_types.tsv')
+preds.to_memtype_tsv('membrane_types.tsv')
 
 # Results are iterable - you can access individual 
 # predictions by index or id and plot them, or access 

@@ -5,7 +5,7 @@ Usage example::
 
     from deeptmhmm2_predictor import DeepTMHMM2
 
-    model = DeepTMHMM2.load()                   # downloads weights on first use
+    model = DeepTMHMM2()                        # downloads weights on first use
     preds = model.predict(["MAST...", "MKVL..."])
 
     preds.to_json("out/predictions.json")
