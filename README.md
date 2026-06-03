@@ -6,7 +6,7 @@ DeepTMHMM 2 is a transmembrane protein topology and membrane type predictor.
 ## Features
 - **Protein Type**: Predicts the type of protein (e.g., globular, alpha TM, beta barrel).
 - **Topology Prediction**: Predicts Signal Peptides, Transmembrane Helices, Beta Barrels, Reentrant loops, and Interfacial helices.
-- **Membrane Type**: Predicts the specific membrane environment across 21 different types.
+- **Membrane Type**: Predicts the specific membrane environment across 17 different types.
 
 ## Installation
 
