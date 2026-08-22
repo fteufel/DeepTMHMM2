@@ -1,12 +1,12 @@
-# DeepTMHMM 2
+# DeepTMHMM2
 
-DeepTMHMM 2 is a transmembrane protein topology and membrane type predictor.
+DeepTMHMM2 is a transmembrane protein topology and membrane type predictor.
 
 
 ## Features
 - **Protein Type**: Predicts the type of protein (e.g., globular, alpha TM, beta barrel).
-- **Topology Prediction**: Predicts Signal Peptides, Transmembrane Helices, Beta Barrels, Reentrant loops, and Interfacial helices.
-- **Membrane Type**: Predicts the specific membrane environment across 17 different types.
+- **Topology Prediction**: Predicts signal peptides, transmembrane helices, beta barrels, reentrant loops, and interfacial helices.
+- **Membrane Type**: Predicts the specific membrane environment of the protein across 17 different types.
 
 ## Installation
 
@@ -17,7 +17,7 @@ pip install git+https://github.com/fteufel/DeepTMHMM2.git
 
 This will install the `dtm2` command line tool.
 
-When running for the first time, DeepTMHMM 2 will fetch model weights from GitHub and cache them in `~/.cache/deeptmhmm2/`. This requires an internet connection. If you want to run DeepTMHMM 2 offline, you can download the model weights manually and place them in any directory of your choice. Then, use the `--model-dir` option to specify the path to the directory containing the model weights.
+When running for the first time, DeepTMHMM2 will fetch model weights from GitHub and cache them in `~/.cache/deeptmhmm2/`. This requires an internet connection. If you want to run DeepTMHMM2 offline, you can download the model weights manually and place them in any directory of your choice. Then, use the `--model-dir` option to specify the path to the directory containing the model weights.
 
 ## Usage
 
@@ -44,7 +44,7 @@ Argument | Type  | Description |
 
 ### Output files
 
-DeepTMHMM 2 processes the input sequences after sorting by length for improved batch processing performance, and writes outputs while processing. Therefore, the order of samples in the output files will differ from the input FASTA file, generally appearing from longest sequence to shortest.
+DeepTMHMM2 processes the input sequences after sorting by length for improved batch processing performance, and writes outputs while processing. Therefore, the order of samples in the output files will differ from the input FASTA file, generally appearing from longest sequence to shortest.
 
 - `predicted_topologies.3line`: Format with 3 lines per sequence:  fasta header, amino acid sequence, and predicted topology string.
 - `TMRs.gff3`: GFF3 formatted predicted topology elements.
@@ -87,7 +87,7 @@ Lysosome membrane | Cytoplasmic | Lumenal
 
 ### Python API
 
-You can also use DeepTMHMM 2 in custom Python code instead of relying on the CLI:
+You can also use DeepTMHMM2 in custom Python code instead of relying on the CLI:
 
 ```python
 from deeptmhmm2_predictor import DeepTMHMM2
