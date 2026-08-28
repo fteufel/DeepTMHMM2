@@ -48,3 +48,13 @@ arguments:
     required: false
 
 
+citation:
+    entry_type: article
+    author: >-
+         Felix Teufel, Jeppe Hallgren, Henrik Nielsen, Anders Krogh, Konstantinos D. Tsirigos, Ole Winther
+    journal: Biorxiv
+    month: '8'
+    title: DeepTMHMM2 enables accurate prediction of transmembrane protein topology and subcellular location
+    year: '2026'
+    url: https://www.biorxiv.org/content/10.64898/2026.08.24.746435v1
+    doi: 10.64898/2026.08.24.746435
