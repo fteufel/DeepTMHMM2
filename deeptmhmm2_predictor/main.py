@@ -47,7 +47,12 @@ def main():
     parser.add_argument("--marginals", action="store_true", help="Compute marginals for each prediction")
     parser.add_argument("--batch-size", type=int, default=96, help="Batch size for inference")
     parser.add_argument("--max-length-diff", type=int, default=500, help="Maximum sequence length difference allowed within a batch")
+    parser.add_argument("--threads", type=int, default=None, help="Maximum number of CPU threads to use (default: all available)")
     args = parser.parse_args()
+
+    if args.threads is not None and args.threads > 1:
+        torch.set_num_threads(args.threads)
+        torch.set_num_interop_threads(args.threads)
 
     out_dir = Path(args.output_dir)
     os.makedirs(out_dir, exist_ok=True)
