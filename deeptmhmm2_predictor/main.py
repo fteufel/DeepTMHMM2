@@ -50,7 +50,7 @@ def main():
     parser.add_argument("--threads", type=int, default=None, help="Maximum number of CPU threads to use (default: all available)")
     args = parser.parse_args()
 
-    if args.threads is not None and args.threads > 1:
+    if args.threads is not None and args.threads > 0:
         torch.set_num_threads(args.threads)
         torch.set_num_interop_threads(args.threads)
 

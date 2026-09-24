@@ -259,7 +259,7 @@ class DeepTMHMM2:
             device = "cuda" if torch.cuda.is_available() else "cpu"
         self._device = device
 
-        if num_threads is not None and num_threads > 1:
+        if num_threads is not None and num_threads > 0:
             torch.set_num_threads(num_threads)
             try:
                 torch.set_num_interop_threads(num_threads)
