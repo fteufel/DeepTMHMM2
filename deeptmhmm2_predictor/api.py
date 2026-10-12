@@ -253,13 +253,19 @@ class DeepTMHMM2:
         num_threads:
             Maximum number of CPU threads used for inference. When ``None``,
             PyTorch keeps its default of one thread per available core. Only
-            relevant when running on CPU.
+            relevant when running on CPU. Note that setting this modifies the
+            global PyTorch thread configuration (``torch.set_num_threads``) for
+            the current process.
         """
         if device is None:
             device = "cuda" if torch.cuda.is_available() else "cpu"
         self._device = device
 
-        if num_threads is not None and num_threads > 0:
+        if num_threads is not None:
+            if num_threads <= 0:
+                raise ValueError(
+                    f"num_threads must be a positive integer, got {num_threads}"
+                )
             torch.set_num_threads(num_threads)
             try:
                 torch.set_num_interop_threads(num_threads)
