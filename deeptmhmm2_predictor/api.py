@@ -235,6 +235,7 @@ class DeepTMHMM2:
         self,
         model_dir: Optional[Union[str, Path]] = None,
         device: Optional[str] = None,
+        num_threads: Optional[int] = None,
     ) -> "DeepTMHMM2":
         """Load the model ensemble and ESM2 backbone.
 
@@ -249,10 +250,27 @@ class DeepTMHMM2:
             ``"cuda"`` when available, otherwise ``"cpu"``.
             Avoid ``"mps"`` on Apple Silicon — numerical inconsistencies in
             the ESM2 embeddings lead to wrong predictions.
+        num_threads:
+            Maximum number of CPU threads used for inference. When ``None``,
+            PyTorch keeps its default of one thread per available core. Only
+            relevant when running on CPU. Note that setting this modifies the
+            global PyTorch thread configuration (``torch.set_num_threads``) for
+            the current process.
         """
         if device is None:
             device = "cuda" if torch.cuda.is_available() else "cpu"
         self._device = device
+
+        if num_threads is not None:
+            if num_threads <= 0:
+                raise ValueError(
+                    f"num_threads must be a positive integer, got {num_threads}"
+                )
+            torch.set_num_threads(num_threads)
+            try:
+                torch.set_num_interop_threads(num_threads)
+            except RuntimeError:
+                pass
 
         if model_dir is not None:
             model_path = Path(model_dir)

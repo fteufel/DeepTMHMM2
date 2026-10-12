@@ -40,6 +40,7 @@ Argument | Type  | Description |
 `--batch-size` | `int` | (Optional, performance) Maximum number of sequences to process simultaneously (default: 96). |
 `--max-length-diff` | `int` | (Optional, performance) Maximum residue length difference between the shortest and longest sequence in a single batch. We start a new batch when the length difference between the current sequence and the previous one exceeds this value to avoid excessive padding processing. (default: 500). |
 `--device` | `str`  | (Optional, performance) Device to run inference on (defaults to `cuda` if available, else `cpu`). Do not use `mps` on Apple Silicon, as we have observed numerical inconsistencies in the ESM2 language model embedding that lead to wrong predictions. |
+`--threads` | `int` | (Optional, performance) Maximum number of CPU threads used for inference. Defaults to all available cores. Only relevant when running on CPU. |
 
 
 ### Output files
