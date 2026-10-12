@@ -119,3 +119,11 @@ print(preds[0].segments)
 print(preds[0].membrane_types)
 print(preds[0].membrane_types_probabilities)
 ```
+
+## Citation
+
+> DeepTMHMM2 enables accurate prediction of transmembrane protein topology and subcellular location
+Felix Teufel, Jeppe Hallgren, Henrik Nielsen, Anders Krogh, Konstantinos D. Tsirigos, Ole Winther
+bioRxiv 2026.08.24.746435; doi: https://doi.org/10.64898/2026.08.24.74643
+
+The downloadable version is free for academic use. Please inquire for commercial licensing.
